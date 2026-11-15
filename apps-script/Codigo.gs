@@ -1,5 +1,5 @@
 /**
- * Evalúapp · script de la hoja de Google.
+ * Evalúapp · script de la hoja de Google · versión 1.1 (añade la columna «area»).
  *
  * Cómo instalarlo (una sola vez):
  * 1. Crea una hoja de cálculo nueva en el Drive de tu cuenta de educaand.
@@ -17,7 +17,7 @@
 const HOJA_REG = 'registros';
 const HOJA_CFG = 'config';
 const HOJA_AL = 'alumnos';
-const COLS = ['id', 'tipo', 'alumno', 'criterio', 'nivel', 'fecha', 'texto', 'actualizado'];
+const COLS = ['id', 'tipo', 'alumno', 'criterio', 'nivel', 'fecha', 'texto', 'actualizado', 'area'];
 
 function configurar() {
   const props = PropertiesService.getScriptProperties();
@@ -78,11 +78,16 @@ function hoja_(nombre, cabecera) {
   let h = ss.getSheetByName(nombre);
   if (!h) {
     h = ss.insertSheet(nombre);
-    h.getRange('A:H').setNumberFormat('@'); // texto: evita que Sheets convierta fechas y niveles
+    h.getRange('A:I').setNumberFormat('@'); // texto: evita que Sheets convierta fechas y niveles
     if (cabecera) {
       h.getRange(1, 1, 1, cabecera.length).setValues([cabecera]).setFontWeight('bold');
       h.setFrozenRows(1);
     }
+  }
+  if (cabecera && h.getLastColumn() < cabecera.length) {
+    // hoja creada con una versión anterior: se añaden las columnas nuevas
+    h.getRange(1, 1, 1, cabecera.length).setValues([cabecera]).setFontWeight('bold');
+    h.getRange(1, 1, h.getMaxRows(), cabecera.length).setNumberFormat('@');
   }
   return h;
 }
@@ -101,7 +106,7 @@ function leerTodo_() {
   if (n > 0) {
     h.getRange(2, 1, n, COLS.length).getValues().forEach(v => {
       if (!v[0]) return;
-      const r = { id: String(v[0]), t: String(v[1]), a: String(v[2]), c: String(v[3] || ''), f: fecha_(v[5]) };
+      const r = { id: String(v[0]), t: String(v[1]), a: String(v[2]), c: String(v[3] || ''), f: fecha_(v[5]), ar: String(v[8] || 'mat') };
       if (r.t === 'niv') r.n = Number(v[4]); else r.txt = String(v[6]);
       regs.push(r);
     });
@@ -121,7 +126,7 @@ function aplicar_(ops) {
   ops.forEach(op => {
     if (op.op === 'up' && op.r && op.r.id) {
       const r = op.r;
-      const fila = [r.id, r.t, r.a, r.c || '', r.t === 'niv' ? r.n : '', r.f, r.txt || '', ahora];
+      const fila = [r.id, r.t, r.a, r.c || '', r.t === 'niv' ? r.n : '', r.f, r.txt || '', ahora, r.ar || 'mat'];
       if (r.id in idx) datos[idx[r.id]] = fila;
       else { idx[r.id] = datos.length; datos.push(fila); }
       tocado = true;

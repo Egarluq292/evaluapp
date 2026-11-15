@@ -19,6 +19,11 @@ const CRITS=[
  {c:'8.1',ce:8,t:'Colaborar en equipo',d3:'Participa con respeto y empieza a colaborar y a resolver conflictos.',d4:'Colabora activamente y establece relaciones saludables e igualitarias.',r:['No participa o dificulta el trabajo del grupo.','Participa si se le pide.','Colabora con respeto y ayuda a resolver conflictos.','Dinamiza el grupo e integra a todos.']},
  {c:'8.2',ce:8,t:'Responsabilidad en el equipo',d3:'Respeta el reparto de tareas y practica la escucha activa.',d4:'Participa en el reparto de tareas, asume responsabilidades y se comunica con eficacia.',r:['No asume su tarea.','Asume su tarea con recordatorios.','Cumple su parte y escucha a los demás.','Organiza tareas y se comunica de forma eficaz.']}
 ];
+const AREAS=[
+ {id:'mat',n:'Matemáticas',ciclo:'2.º ciclo · 3.º y 4.º',on:1},
+ {id:'len',n:'Lengua Castellana y Literatura',ciclo:'2.º ciclo · 3.º y 4.º'},
+ {id:'cmn',n:'Conocimiento del Medio Natural, Social y Cultural',ciclo:'2.º ciclo · 3.º y 4.º'}
+];
 const LVN=['','Inicio','En proceso','Conseguido','Destacado'];
 const LVC=['var(--l0)','var(--l1)','var(--l2)','var(--l3)','var(--l4)'];
 const TRI_N=['1.er trim.','2.º trim.','3.er trim.','Curso'];
@@ -29,13 +34,13 @@ const DEF_CONFIG=()=>({alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31
 let S={config:DEF_CONFIG(),months:{}};
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function guessTri(){const t=today();const i=S.config.tri.findIndex(([a,b])=>t>=a&&t<=b);return i<0?3:i}
-let UI={tab:'evaluar',tri:0,crit:'1.1',fecha:today(),rub:true,modo:'nivel',alumno:null,curso:'3',filtro:'todos'};
+let UI={area:'mat',tab:'inicio',tri:0,crit:'1.1',fecha:today(),rub:true,modo:'nivel',alumno:null,curso:'3',filtro:'todos'};
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.0.0';
+const APP_VERSION='1.1.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -46,7 +51,7 @@ function applyOp(o){if(o.op==='up')putReg(o.r);else if(o.op==='del')dropReg(o.id
 function enqueue(o){if(o.op==='config')OPS=OPS.filter(x=>x.op!=='config');OPS.push(JSON.parse(JSON.stringify(o)));persist();Sync.schedule()}
 const Sync={timer:null,busy:false,
  ok(){return !!(SYNC.url&&SYNC.key)},
- status(){if(!this.ok())setSync('warn','Solo en este dispositivo');else if(!navigator.onLine)setSync('warn',OPS.length?`Sin conexión · ${OPS.length} pendientes`:'Sin conexión');},
+ status(){if(!this.ok())setSync('warn','Sin sincronizar');else if(!navigator.onLine)setSync('warn',OPS.length?`Sin conexión · ${OPS.length} pendientes`:'Sin conexión');},
  schedule(ms=1200){if(!this.ok()){this.status();return}clearTimeout(this.timer);this.timer=setTimeout(()=>this.run(),ms)},
  async call(body,url=SYNC.url,key=SYNC.key){
    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key},body))});
@@ -60,23 +65,27 @@ const Sync={timer:null,busy:false,
      if(OPS.length){const env=OPS.slice();await this.call({action:'push',ops:env});OPS=OPS.slice(env.length);persist()}
      const j=await this.call({action:'pull'});
      const vacia=!j.config&&!(j.regs||[]).length;
-     if(vacia&&(S.config.alumnos.length||allRegs().length)){
-       OPS=[{op:'config',config:S.config}].concat(allRegs().map(r=>({op:'up',r})));persist();
+     if(vacia&&(S.config.alumnos.length||allRegsRaw().length)){
+       OPS=[{op:'config',config:S.config}].concat(allRegsRaw().map(r=>({op:'up',r})));persist();
        this.busy=false;return this.run();
      }
      if(!vacia||!OPS.length){S.config=Object.assign(DEF_CONFIG(),j.config||{});S.months={};(j.regs||[]).forEach(r=>{const m=mk(r.f);(S.months[m]=S.months[m]||[]).push(r)});OPS.forEach(applyOp);persist();render()}
      setSync('ok','Sincronizado');
-   }catch(e){setSync('err','Error al sincronizar');console.warn(e);this.lastError=e.message}
+   }catch(e){setSync('err','Error de sincronización');console.warn(e);this.lastError=e.message}
    this.busy=false;if(OPS.length)this.schedule(4000);
  }
 };
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')Sync.schedule(200)});
 window.addEventListener('online',()=>Sync.schedule(200));window.addEventListener('offline',()=>Sync.status());
 setInterval(()=>{if(document.visibilityState==='visible'&&!OPS.length)Sync.run()},90000);
-function setSync(k,t){const el=document.getElementById('sync');el.innerHTML=`<span class="dot ${k}"></span><span>${esc(t)}</span>`}
+let SYNCST=['warn','Sin sincronizar'];
+function syncHTML(){return `<span class="dot ${SYNCST[0]}"></span><span>${esc(SYNCST[1])}</span>`}
+function setSync(k,t){SYNCST=[k,t];document.querySelectorAll('.sync').forEach(el=>el.innerHTML=syncHTML());if(UI.tab==='inicio'||UI.tab==='ajustes'){const v=document.getElementById('view');if(v&&!document.querySelector('.modal-bg'))render()}}
 
 /* ============ CÁLCULOS ============ */
-const allRegs=()=>Object.values(S.months).flat();
+const allRegsRaw=()=>Object.values(S.months).flat();
+const allRegs=()=>allRegsRaw().filter(r=>(r.ar||'mat')===UI.area);
+const areaAct=()=>AREAS.find(a=>a.id===UI.area)||AREAS[0];
 function inPeriod(f){if(UI.tri===3)return true;const [a,b]=S.config.tri[UI.tri];return f>=a&&f<=b}
 const periodRegs=()=>allRegs().filter(r=>inPeriod(r.f));
 const aplica=(al,c)=>!(CRIT[c].solo4&&al.curso==='3');
@@ -92,10 +101,10 @@ function setNivel(a,c,n){
   const f=UI.fecha;
   const r=allRegs().find(r=>r.t==='niv'&&r.a===a&&r.c===c&&r.f===f);
   if(r&&r.n===n){dropReg(r.id);enqueue({op:'del',id:r.id})}
-  else{const nr=r?Object.assign({},r,{n}):{id:uid(),t:'niv',a,c,n,f};putReg(nr);enqueue({op:'up',r:nr})}
+  else{const nr=r?Object.assign({},r,{n}):{id:uid(),t:'niv',a,c,n,f,ar:UI.area};putReg(nr);enqueue({op:'up',r:nr})}
   render();
 }
-function addObs(a,c,txt,f){const r={id:uid(),t:'obs',a,c,txt,f};putReg(r);enqueue({op:'up',r})}
+function addObs(a,c,txt,f){const r={id:uid(),t:'obs',a,c,txt,f,ar:UI.area};putReg(r);enqueue({op:'up',r})}
 function delReg(id){dropReg(id);enqueue({op:'del',id})}
 function saveConfig(){enqueue({op:'config',config:S.config})}
 
@@ -108,10 +117,64 @@ const ICONS={
  ajustes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
  nota:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
 };
-const TABS=[['evaluar','Evaluar'],['clase','Clase'],['alumno','Alumno'],['seneca','Séneca'],['ajustes','Ajustes']];
+ICONS.inicio='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/></svg>';
+ICONS.prog='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4H9a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5h-6A1.5 1.5 0 0 1 2 16Z"/><path d="M22 5.5A1.5 1.5 0 0 0 20.5 4H15a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5h6A1.5 1.5 0 0 0 22 16Z"/></svg>';
+ICONS.area='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>';
+ICONS.chev='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>';
+ICONS.evaluar='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="m9 13 2 2 4-4"/></svg>';
+ICONS.clase='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7.5" r="3"/><path d="M6.5 20a5.5 5.5 0 0 1 11 0"/><circle cx="5" cy="10" r="2"/><circle cx="19" cy="10" r="2"/><path d="M1.5 18a3.5 3.5 0 0 1 4-3.4M22.5 18a3.5 3.5 0 0 0-4-3.4"/></svg>';
+const SECS={
+ inicio:{n:'Inicio',sub:'Panel docente'},
+ evaluar:{n:'Evaluar',sub:'Criterios y rúbricas'},
+ clase:{n:'Clase',sub:'Grupo de un vistazo'},
+ alumno:{n:'Alumno',sub:'Ficha y seguimiento'},
+ seneca:{n:'Séneca',sub:'Traslado de notas'},
+ prog:{n:'Programación',sub:'Unidades y situaciones'},
+ ajustes:{n:'Ajustes',sub:'Datos y copias'}
+};
+const NAV=['inicio','evaluar','clase','alumno','seneca','ajustes'];
+const MOBNAV=['inicio','evaluar','clase','alumno','seneca'];
+const cursoEsc=()=>{const d=new Date();const y=d.getMonth()>=8?d.getFullYear():d.getFullYear()-1;return `${y}/${y+1}`};
+const secVars=k=>`--navbg:var(--s-${k});--navacc:var(--a-${k})`;
 function renderChrome(){
-  document.getElementById('tabs').innerHTML=TABS.map(([k,n])=>`<button class="${UI.tab===k?'on':''}" data-tab="${k}">${ICONS[k]}${n}</button>`).join('');
-  document.getElementById('triSeg').innerHTML=TRI_N.map((n,i)=>`<button class="${UI.tri===i?'on':''}" data-tri="${i}">${n}</button>`).join('');
+  const k=UI.tab,sec=SECS[k];
+  const root=document.documentElement.style;root.setProperty('--acc',`var(--a-${k})`);root.setProperty('--sec',`var(--s-${k})`);
+  document.getElementById('side').innerHTML=`<div class="brand"><div class="logo"><img src="icons/logo.svg" alt=""></div><div class="wm">Evalú<span>app</span><small>Panel docente</small></div></div>
+   <button class="areacard area" data-act="area" style="margin:0 0 16px;padding:11px 12px"><div class="ico" style="width:34px;height:34px">${ICONS.area}</div><div style="min-width:0"><b style="font-size:14px">${esc(areaAct().n)}</b><span>Cambiar área</span></div></button>
+   ${NAV.map(n=>`<button class="nav ${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}</button>`).join('')}
+   <div class="foot"><div class="sync">${syncHTML()}</div></div>`;
+  const showTri=['inicio','clase','alumno','seneca'].includes(k);
+  document.getElementById('top').innerHTML=`<div class="toprow">
+     ${k==='inicio'?`<div class="sync">${syncHTML()}</div>`
+     :`<div class="ttl"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.chev}</button><div class="ico">${ICONS[k]}</div><div>${sec.n}<small>${esc(areaAct().n)}<span class="deskonly"> · ${sec.sub}</span></small></div></div>`}
+     <div class="topright">${k==='inicio'?'':`<div class="sync">${syncHTML()}</div>`}${k!=='ajustes'?`<button class="iconbtn mobonly" data-tab="ajustes" aria-label="Ajustes">${ICONS.ajustes}</button>`:''}</div></div>
+     ${showTri?`<div class="trirow"><div class="seg" id="triSeg">${TRI_N.map((n,i)=>`<button class="${UI.tri===i?'on':''}" data-tri="${i}">${n}</button>`).join('')}</div></div>`:''}`;
+  document.getElementById('tabs').innerHTML=`<div class="in">${MOBNAV.map(n=>`<button class="${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}</button>`).join('')}</div>`;
+}
+function resumen(){
+  const als=S.config.alumnos,regs=periodRegs();
+  let tot=0,ev=0;const alertAl=new Set();
+  als.forEach(al=>CRITS.forEach(x=>{if(!aplica(al,x.c))return;tot++;const v=nivelMedio(regs,al.id,x.c);if(v!=null){ev++;if(v<2)alertAl.add(al.id)}}));
+  const sinEval=CRITS.filter(x=>als.some(al=>aplica(al,x.c))&&!regs.some(r=>r.t==='niv'&&r.c===x.c)).length;
+  return {als:als.length,tot,ev,alertas:alertAl.size,sinEval,pct:tot?Math.round(ev/tot*100):0};
+}
+function vInicio(){
+  const r=resumen();
+  const tiles=[
+   ['evaluar','Criterios y rúbricas',!r.als?'Sin alumnos':r.sinEval?`${r.sinEval} sin evaluar`:'Todos con datos'],
+   ['clase','Mapa de calor y alertas',!r.als?'Sin alumnos':r.alertas?`${r.alertas} con alertas`:'Sin alertas'],
+   ['alumno','Ficha y seguimiento',`${r.als} ${r.als===1?'alumno':'alumnos'}`],
+   ['seneca','Traslado de notas',`${r.pct} % con nota`],
+   ['prog','Unidades y situaciones','Próximamente'],
+   ['ajustes','Datos y copias',Sync.ok()?(OPS.length?`${OPS.length} pendientes`:'Sincronizado'):'Sin sincronizar']
+  ];
+  return `<div class="hero2"><span class="yr">${cursoEsc().replace('/',' / ')}</span><img class="cap" src="icons/logo.svg" alt=""><h1>Evalú<span>app</span></h1><p>Tu herramienta docente</p>
+   <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0 70 C200 20 380 110 600 66 C820 22 1000 96 1200 50 L1200 120 L0 120Z" fill="rgba(94,230,204,.10)"/><path d="M0 92 C240 50 420 120 640 86 C860 52 1020 110 1200 78 L1200 120 L0 120Z" fill="rgba(72,140,230,.12)"/></svg></div>
+  <button class="areacard" data-act="area"><div class="ico">${ICONS.area}</div><div><b>${esc(areaAct().n)}</b><span>2.º ciclo · ${TRI_N[UI.tri]==='Curso'?'curso completo':TRI_N[UI.tri].replace('trim.','trimestre')}</span></div><div class="chg">Cambiar ${ICONS.chev.replace('<svg','<svg width="16" height="16"')}</div></button>
+  <div class="tiles">${tiles.map(([k,sub,live])=>`<button class="tile ${k==='prog'?'soon':''}" ${k==='prog'?'data-act="prox"':`data-tab="${k}"`} style="--ts:var(--t-${k});--ta:var(--a-${k})">${ICONS[k]}<b>${SECS[k].n}</b><span class="sub">${sub}</span><span class="live">${esc(live)}</span></button>`).join('')}</div>`;
+}
+function areaModal(){
+  modal(`<h3>Área</h3>${AREAS.map(a=>`<button class="opt ${a.id===UI.area?'on':''}" data-area="${a.id}" ${a.on?'':'disabled'}><div><b>${esc(a.n)}</b><span>${a.ciclo}</span></div><span class="badge">${a.id===UI.area?'Activa':a.on?'Disponible':'Próximamente'}</span></button>`).join('')}<p class="small muted" style="margin:14px 2px 0">El alumnado es el mismo en todas las áreas; los criterios y las notas son propios de cada una.</p><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(b&&!b.disabled){UI.area=b.dataset.area;try{localStorage.setItem('evaluapp-area',UI.area)}catch(_){ }close();render()}})});
 }
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2200)}
 function modal(html,onMount){const bg=document.createElement('div');bg.className='modal-bg';bg.innerHTML=`<div class="modal">${html}</div>`;document.body.appendChild(bg);const close=()=>bg.remove();bg.addEventListener('click',e=>{if(e.target===bg||e.target.closest('[data-close]'))close()});onMount&&onMount(bg.querySelector('.modal'),close);return close}
@@ -136,6 +199,7 @@ function vEvaluar(){
     <div class="critinfo"><div><div class="ce">CE${cr.ce} · ${CES[cr.ce]}</div><div class="t">${cr.c} ${esc(cr.t)}</div>
       <div class="small muted" style="margin-top:4px">${cr.d3?`<b>3.º:</b> ${esc(cr.d3)}<br>`:''}<b>4.º:</b> ${esc(cr.d4)}</div></div>
       <button class="btn sm" data-act="rub">${UI.rub?'Ocultar rúbrica':'Ver rúbrica'}</button></div>
+    ${(()=>{const ti=S.config.tri.findIndex(([x,y])=>UI.fecha>=x&&UI.fecha<=y);const rg=allRegs().filter(r=>r.t==='niv'&&r.c===cr.c&&(ti<0||(r.f>=S.config.tri[ti][0]&&r.f<=S.config.tri[ti][1])));const ap=shown.filter(al=>aplica(al,cr.c));const ev=ap.filter(al=>rg.some(r=>r.a===al.id)).length;const p=ap.length?Math.round(ev/ap.length*100):0;return `<div><div class="prog"><i style="width:${p}%"></i></div><div class="small muted" style="margin-top:6px">${ev} de ${ap.length} alumnos evaluados en este criterio${ti>=0?' este trimestre':''} · ${p} %</div></div>`})()}
     ${UI.rub?`<div class="rub">${cr.r.map((t,i)=>`<div><b><span class="sw" style="background:${LVC[i+1]}"></span>${i+1} · ${LVN[i+1]}</b>${esc(t)}</div>`).join('')}</div>`:''}
   </div>
   <div class="card list" style="margin-top:12px">
@@ -166,7 +230,7 @@ function vClase(){
   <div class="kpis">
     <div class="kpi"><b>${als.length}</b><span>alumnos</span></div>
     <div class="kpi"><b>${niv.length}</b><span>registros</span></div>
-    <div class="kpi"><b>${tot?Math.round(ev/tot*100):0}%</b><span>casillas evaluadas</span></div>
+    <div class="kpi"><b>${tot?Math.round(ev/tot*100):0} %</b><span>casillas evaluadas</span></div>
     <div class="kpi"><b style="color:${alerts.length?'var(--l1)':'inherit'}">${Object.keys(byAl).length}</b><span>alumnos con alertas</span></div>
   </div>
   <div class="toolbar" style="margin-top:14px">
@@ -199,8 +263,8 @@ function vAlumno(){
   const nRegs=regs.filter(r=>r.t==='niv'&&r.a===al.id).length;
   const ceAvg=Object.keys(CES).map(ce=>{const vs=crs.filter(x=>x.ce==ce).map(x=>nivelMedio(regs,al.id,x.c)).filter(v=>v!=null);return [ce,vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null]});
   return `<h2>Alumno · ${TRI_N[UI.tri]}</h2>
-  <div class="toolbar"><select id="selAl" style="max-width:320px">${als.map(a=>`<option value="${a.id}" ${a.id===al.id?'selected':''}>${esc(a.nombre)} (${a.curso}.º)</option>`).join('')}</select>
-   <div class="btns"><button class="btn sm" data-obs="${al.id}">+ Observación</button><button class="btn sm pri" data-act="informe">Copiar informe</button></div></div>
+  <div class="g2a" style="margin-bottom:12px"><select id="selAl" style="grid-column:1/-1">${als.map(a=>`<option value="${a.id}" ${a.id===al.id?'selected':''}>${esc(a.nombre)} (${a.curso}.º)</option>`).join('')}</select>
+   <button class="btn" data-obs="${al.id}">+ Observación</button><button class="btn pri" data-act="informe">Copiar informe</button></div>
   <div class="kpis">
    <div class="kpi"><b style="color:${m!=null&&m<5?'var(--l1)':'inherit'}">${m==null?'–':m.toFixed(1).replace('.',',')}</b><span>media orientativa</span></div>
    <div class="kpi"><b>${evs}/${crs.length}</b><span>criterios evaluados</span></div>
@@ -209,7 +273,7 @@ function vAlumno(){
   </div>
   <div class="grid2" style="margin-top:12px">
    <div class="card"><h3>Por competencia específica</h3><div class="bars">${ceAvg.map(([ce,v])=>`<div class="b"><span>CE${ce} ${CES[ce]}</span><div class="track"><div class="fill" style="width:${v==null?0:v/4*100}%;background:${colorNv(v)}"></div></div><b>${v==null?'–':v.toFixed(1).replace('.',',')}</b></div>`).join('')}</div></div>
-   <div class="card"><h3>Criterios</h3>${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'#9aa3ae':'#fff'}" data-cell="${al.id}|${x.c}">${v==null?'·':aNota(v).toFixed(0)}</button></div>`}).join('')}</div>
+   <div class="card"><h3>Criterios</h3>${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'var(--dim)':'var(--on-lv)'}" data-cell="${al.id}|${x.c}">${v==null?'·':aNota(v).toFixed(0)}</button></div>`}).join('')}</div>
   </div>
   <div class="card" style="margin-top:12px"><h3>Observaciones</h3>${obs.length?obs.map(o=>`<div class="obs"><div class="meta"><span>${fmtF(o.f)}${o.c?' · '+o.c+' '+esc(CRIT[o.c]?CRIT[o.c].t:''):''}</span><a href="#" data-del="${o.id}" style="color:var(--l1)">Borrar</a></div>${esc(o.txt)}</div>`).join(''):'<div class="muted small">Sin observaciones en este periodo.</div>'}</div>`;
 }
@@ -236,9 +300,9 @@ function vSeneca(){
   const {als,crs,rows}=senecaData(UI.curso);
   return `<h2>Traslado a Séneca · ${TRI_N[UI.tri]}</h2>
   <div class="note">Nota de 1 a 10 por criterio, en el mismo orden que el cuaderno de Séneca. Introdúcelas allí y Séneca calculará la nota del área con sus porcentajes. Las casillas vacías son criterios sin evaluar en este periodo.</div>
-  <div class="toolbar" style="margin-top:12px"><div class="seg" style="min-width:160px">${['3','4'].map(c=>`<button data-curso="${c}" class="${UI.curso===c?'on':''}">${c}.º</button>`).join('')}</div>
-   <div class="btns"><button class="btn sm" data-act="copySen">Copiar tabla</button><button class="btn sm pri" data-act="csvSen">Descargar CSV</button></div></div>
-  ${als.length?`<div class="hm-wrap"><table class="sn"><thead><tr><th>Alumno</th>${crs.map(x=>`<th>${x.c}</th>`).join('')}</tr></thead><tbody>${als.map((al,i)=>`<tr><td>${esc(al.nombre)}</td>${rows[i].map(v=>`<td class="v" style="color:${v===''?'#c3c8d0':+v<5?'var(--l1)':'inherit'}">${v||'·'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:`<div class="card empty">No hay alumnos de ${UI.curso}.º.</div>`}`;
+  <div class="g2b" style="margin:12px 0"><div class="seg" style="grid-column:1/-1">${['3','4'].map(c=>`<button data-curso="${c}" class="${UI.curso===c?'on':''}">${c}.º</button>`).join('')}</div>
+   <button class="btn" data-act="copySen">Copiar tabla</button><button class="btn pri" data-act="csvSen">Descargar CSV</button></div>
+  ${als.length?`<div class="hm-wrap"><table class="sn"><thead><tr><th>Alumno</th>${crs.map(x=>`<th>${x.c}</th>`).join('')}</tr></thead><tbody>${als.map((al,i)=>`<tr><td>${esc(al.nombre)}</td>${rows[i].map(v=>`<td class="v" style="color:${v===''?'var(--dim)':+v<5?'var(--l1)':'inherit'}">${v||'·'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:`<div class="card empty">No hay alumnos de ${UI.curso}.º.</div>`}`;
 }
 function senecaTSV(sep){const {als,crs,rows}=senecaData(UI.curso);return [['Alumno',...crs.map(x=>x.c)].join(sep),...als.map((al,i)=>[al.nombre,...rows[i]].join(sep))].join('\n')}
 
@@ -283,10 +347,11 @@ function vAjustes(){
 }
 
 /* ============ RENDER + EVENTOS ============ */
-const VIEWS={evaluar:vEvaluar,clase:vClase,alumno:vAlumno,seneca:vSeneca,ajustes:vAjustes};
+const VIEWS={inicio:vInicio,evaluar:vEvaluar,clase:vClase,alumno:vAlumno,seneca:vSeneca,ajustes:vAjustes};
 function render(){
   const act=document.activeElement;if(act&&['alNom','syUrl','syKey'].includes(act.id))return;
   renderChrome();document.getElementById('view').innerHTML=VIEWS[UI.tab]();
+  document.body.dataset.tab=UI.tab;
 }
 function cellModal(a,c){
   const al=S.config.alumnos.find(x=>x.id===a),cr=CRIT[c];
@@ -307,14 +372,14 @@ function demo(){
   const nuevos=noms.map(([n,c])=>({id:uid(),nombre:n+' (ej.)',curso:c}));
   S.config.alumnos=S.config.alumnos.concat(nuevos);saveConfig();
   const fechas=['2026-09-22','2026-10-06','2026-10-20','2026-11-03','2026-11-10'];
-  nuevos.forEach((al,i)=>{CRITS.forEach(x=>{if(!aplica(al,x.c))return;fechas.forEach((f,j)=>{if(Math.random()<.45){let n=Math.round(base[i]+(Math.random()-.5)*1.6+j*.12);n=Math.max(1,Math.min(4,n));const r={id:uid(),t:'niv',a:al.id,c:x.c,n,f};putReg(r);OPS.push({op:'up',r})}})})});
-  const ob={id:uid(),t:'obs',a:nuevos[2].id,c:'2.2',txt:'Se bloquea con las restas llevando; mejora mucho con material manipulativo.',f:'2026-11-10'};putReg(ob);OPS.push({op:'up',r:ob});
+  nuevos.forEach((al,i)=>{CRITS.forEach(x=>{if(!aplica(al,x.c))return;fechas.forEach((f,j)=>{if(Math.random()<.45){let n=Math.round(base[i]+(Math.random()-.5)*1.6+j*.12);n=Math.max(1,Math.min(4,n));const r={id:uid(),t:'niv',a:al.id,c:x.c,n,f,ar:'mat'};putReg(r);OPS.push({op:'up',r})}})})});
+  const ob={id:uid(),t:'obs',ar:'mat',a:nuevos[2].id,c:'2.2',txt:'Se bloquea con las restas llevando; mejora mucho con material manipulativo.',f:'2026-11-10'};putReg(ob);OPS.push({op:'up',r:ob});
   persist();Sync.schedule();UI.tri=0;render();toast('Ejemplo cargado');
 }
 function quitarEjemplo(){
   const ids=new Set(S.config.alumnos.filter(a=>/\(ej\.\)$/.test(a.nombre)).map(a=>a.id));
   if(!ids.size){toast('No hay alumnos de ejemplo');return}
-  allRegs().filter(r=>ids.has(r.a)).forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});
+  allRegsRaw().filter(r=>ids.has(r.a)).forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});
   S.config.alumnos=S.config.alumnos.filter(a=>!ids.has(a.id));saveConfig();render();toast('Ejemplo quitado');
 }
 
@@ -322,7 +387,7 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('button,a,[data-cell]');if(!t)return;
   const d=t.dataset;
   if(d.tab){UI.tab=d.tab;render();scrollTo(0,0);return}
-  if(d.tri!==undefined&&t.closest('#triSeg')){UI.tri=+d.tri;render();return}
+  if(d.tri!==undefined&&t.closest('#triSeg')&&t.tagName==='BUTTON'){UI.tri=+d.tri;render();return}
   if(d.go){UI.tab=d.go;render();return}
   if(d.crit){UI.crit=d.crit;render();return}
   if(d.filtro){UI.filtro=d.filtro;render();return}
@@ -338,12 +403,14 @@ document.addEventListener('click',e=>{
   if(t.closest('#alCur')&&d.c){t.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===t));return}
   switch(d.act){
     case 'rub':UI.rub=!UI.rub;render();break;
+    case 'area':areaModal();break;
+    case 'prox':toast('Programación llegará en la próxima versión');break;
     case 'demo':demo();break;
     case 'informe':copiar(informeTexto(S.config.alumnos.find(a=>a.id===UI.alumno)));break;
     case 'copySen':copiar(senecaTSV('\t'));break;
     case 'csvSen':descargar(`seneca-mates-${UI.curso}-${['1T','2T','3T','curso'][UI.tri]}.csv`,'﻿'+senecaTSV(';'));break;
     case 'backup':descargar(`evaluapp-copia-${today()}.json`,JSON.stringify(S,null,1),'application/json');break;
-    case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegs().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri});saveConfig();render();toast('Datos borrados')});break;
+    case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegsRaw().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri});saveConfig();render();toast('Datos borrados')});break;
     case 'quitarDemo':quitarEjemplo();break;
     case 'syncSave':guardarSync();break;
     case 'syncOff':confirmar('¿Desconectar la hoja de Google? Los datos se quedarán en este dispositivo y en la hoja.','Desconectar',()=>{SYNC={url:'',key:''};try{localStorage.setItem(LS,'{}')}catch(e){}Sync.status();render()});break;
@@ -359,7 +426,7 @@ document.addEventListener('change',e=>{
   else if(t.id==='selAl'){UI.alumno=t.value;render()}
   else if(t.dataset.nota!==undefined){const v=Math.max(1,Math.min(10,+t.value||1));S.config.notas=S.config.notas.slice();S.config.notas[+t.dataset.nota]=v;saveConfig();render()}
   else if(t.dataset.tri&&t.type==='date'){const [i,j]=t.dataset.tri.split('|').map(Number);S.config.tri=S.config.tri.map(x=>x.slice());S.config.tri[i][j]=t.value;saveConfig();render()}
-  else if(t.id==='restore'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.config||!d.months)throw 0;confirmar('¿Sustituir los datos actuales por los de la copia?','Restaurar',()=>{allRegs().forEach(r=>OPS.push({op:'del',id:r.id}));S.config=Object.assign(DEF_CONFIG(),d.config);S.months=d.months;allRegs().forEach(r=>OPS.push({op:'up',r}));saveConfig();render();toast('Copia restaurada')})}catch(err){toast('Ese archivo no es una copia válida')}};fr.readAsText(t.files[0]);t.value=''}
+  else if(t.id==='restore'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.config||!d.months)throw 0;confirmar('¿Sustituir los datos actuales por los de la copia?','Restaurar',()=>{allRegsRaw().forEach(r=>OPS.push({op:'del',id:r.id}));S.config=Object.assign(DEF_CONFIG(),d.config);S.months=d.months;allRegsRaw().forEach(r=>OPS.push({op:'up',r}));saveConfig();render();toast('Copia restaurada')})}catch(err){toast('Ese archivo no es una copia válida')}};fr.readAsText(t.files[0]);t.value=''}
 });
 document.addEventListener('click',e=>{const b=e.target.closest('#alCur button');if(b){e.preventDefault()}},true);
 
@@ -375,4 +442,4 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   navigator.serviceWorker.register('sw.js').then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)}).catch(()=>{});
   let recargado=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(recargado)return;recargado=true;location.reload()});
 }
-loadLocal();UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
+loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();

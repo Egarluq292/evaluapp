@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Evalúapp</title>
-<meta name="theme-color" content="#2f4fd8">
+<meta name="theme-color" content="#0e1623">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/logo.svg">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Evalúapp">
@@ -14,19 +14,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head><body>
-<div class="app">
-  <header class="top">
-    <div class="toprow">
-      <div class="brand"><div class="logo">E</div><div>Evalúapp<small>Matemáticas · 2.º ciclo</small></div></div>
-      <div class="sync" id="sync"><span class="dot"></span><span>Cargando…</span></div>
-    </div>
-    <div class="trirow"><div class="seg" id="triSeg"></div></div>
-  </header>
-  <main id="view"></main>
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <div class="main">
+    <header class="top" id="top"></header>
+    <main id="view"></main>
+  </div>
 </div>
-<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<nav class="tabs" id="tabs"></nav>
 <div class="toast" id="toast"></div>
-
 <script src="app.js"></script>
 </body>
 </html>
