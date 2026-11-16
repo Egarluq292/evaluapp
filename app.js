@@ -1,37 +1,18 @@
 /* ============ DATOS DEL CURRÍCULO (Orden de 30 de mayo de 2023, Matemáticas, segundo ciclo) ============ */
-const CES={1:'Interpretar situaciones',2:'Resolver problemas',3:'Conjeturar y razonar',4:'Pensamiento computacional',5:'Conexiones',6:'Comunicar y representar',7:'Destrezas personales',8:'Trabajo en equipo'};
-const CRITS=[
- {c:'1.1',ce:1,core:1,t:'Comprender el problema',d3:'Reconoce problemas cotidianos y empieza a comprender sus preguntas y los mensajes que contienen.',d4:'Reconoce problemas cotidianos, comprende sus preguntas e interpreta sus mensajes.',r:['No identifica la pregunta ni los datos, ni siquiera con ayuda.','Identifica la pregunta o algunos datos con ayuda.','Identifica la pregunta y los datos relevantes de forma autónoma.','Descarta datos irrelevantes y reformula el problema con sus palabras.']},
- {c:'1.2',ce:1,core:1,t:'Representar el problema',d3:'Empieza a representar la situación con material, esquemas o diagramas.',d4:'Representa la situación con material, esquemas o diagramas, solo y en equipo.',r:['No representa la situación.','La representa con material o dibujo guiado, con errores.','Elige y hace un dibujo, esquema o montaje que refleja el problema.','Usa representaciones variadas y explica por qué le ayudan.']},
- {c:'2.1',ce:2,core:1,t:'Elegir estrategias',d3:'Empieza a comparar y emplear estrategias de forma pautada.',d4:'Compara y emplea estrategias y toma decisiones.',r:['No aplica ninguna estrategia.','Aplica la estrategia que le sugiere el docente.','Elige por sí mismo una estrategia adecuada.','Compara varias estrategias y elige la más eficaz.']},
- {c:'2.2',ce:2,core:1,t:'Resolver y calcular',d3:'Obtiene soluciones con una estrategia conocida, tanteando y con analogías sencillas.',d4:'Obtiene soluciones con estrategias conocidas, tanteo y analogías.',r:['No llega a una solución o comete errores de cálculo graves.','Llega a la solución con ayuda o con errores de cálculo.','Obtiene la solución con cálculos correctos.','Resuelve por más de un camino o estima antes de calcular.']},
- {c:'2.3',ce:2,core:1,solo4:1,t:'Comprobar la solución',d3:'',d4:'Demuestra y describe la corrección de las soluciones y su coherencia con el contexto.',r:['No revisa la solución.','Revisa solo si se le pide, sin detectar errores.','Comprueba que la solución tiene sentido en el contexto.','Detecta y corrige sus errores y lo justifica.']},
- {c:'3.1',ce:3,t:'Patrones y conjeturas',d3:'Realiza y empieza a analizar conjeturas sencillas sobre patrones, de forma pautada.',d4:'Analiza conjeturas, explora fenómenos y argumenta conclusiones.',r:['No reconoce regularidades.','Reconoce un patrón sencillo con ayuda.','Descubre el patrón, lo continúa y formula una conjetura.','Comprueba sus conjeturas y explica la regla.']},
- {c:'3.2',ce:3,t:'Plantear problemas',d3:'Pone ejemplos de problemas cotidianos y empieza a plantear preguntas.',d4:'Da ejemplos de problemas, plantea preguntas y argumenta conclusiones.',r:['No propone ejemplos ni preguntas.','Propone preguntas copiando modelos.','Inventa problemas o preguntas coherentes con una situación.','Inventa problemas originales y razona posibles conclusiones.']},
- {c:'4.1',ce:4,t:'Secuencias de pasos',d3:'Empieza a automatizar situaciones cotidianas paso a paso, de forma pautada.',d4:'Automatiza situaciones cotidianas y define la rutina.',r:['No ordena los pasos de una tarea.','Ordena los pasos con ayuda.','Describe la secuencia de pasos de tareas cotidianas.','Crea y mejora secuencias, y detecta y corrige fallos.']},
- {c:'4.2',ce:4,t:'Usar herramientas',d3:'Se inicia en el manejo de herramientas adecuadas para resolver problemas.',d4:'Emplea herramientas tecnológicas adecuadas para resolver problemas.',r:['No usa herramientas adecuadas.','Usa herramientas (regla, calculadora, apps…) con ayuda.','Elige y usa la herramienta adecuada de forma autónoma.','Las usa con eficacia y sabe cuándo no hacen falta.']},
- {c:'5.1',ce:5,core:1,t:'Conectar con la vida diaria',d3:'Empieza a conectar las matemáticas con sus experiencias y la vida cotidiana.',d4:'Conecta las matemáticas con la vida cotidiana y resuelve situaciones de su entorno.',r:['No relaciona lo aprendido con situaciones reales.','Lo relaciona si se le dan ejemplos.','Aplica lo aprendido a situaciones de su entorno.','Propone por sí mismo nuevas situaciones donde aplicarlo.']},
- {c:'5.2',ce:5,t:'Interpretar información gráfica',d3:'Identifica conexiones con la vida cotidiana interpretando información gráfica.',d4:'Interpreta esas situaciones y las relaciona con contextos reales.',r:['No extrae información de tablas o gráficos.','Lee datos aislados con ayuda.','Interpreta tablas y gráficos sencillos.','Compara datos y saca conclusiones propias.']},
- {c:'6.1',ce:6,core:1,t:'Lenguaje matemático',d3:'Reconoce lenguaje matemático sencillo y usa vocabulario básico oralmente.',d4:'Comprende mensajes en distintos formatos y se expresa oralmente y por escrito.',r:['No usa vocabulario matemático.','Usa algunos términos, con imprecisiones.','Usa el vocabulario adecuado oralmente y por escrito.','Se expresa con precisión y ayuda a otros a hacerlo.']},
- {c:'6.2',ce:6,core:1,t:'Explicar el proceso',d3:'Empieza a explicar oralmente o con dibujos los pasos y resultados.',d4:'Explica pasos y resultados con lenguaje verbal y gráfico, en papel o digital.',r:['No explica cómo lo ha hecho.','Explica parte del proceso con ayuda.','Explica los pasos y el resultado de forma ordenada.','Explica y justifica con claridad, apoyándose en dibujos o medios digitales.']},
- {c:'7.1',ce:7,t:'Emociones y perseverancia',d3:'Empieza a identificar sus emociones ante retos, pide ayuda si la necesita y persevera.',d4:'Identifica y gestiona sus emociones, con autoconfianza y perseverancia.',r:['Abandona ante la dificultad.','Persiste con apoyo constante.','Mantiene el esfuerzo y pide ayuda cuando la necesita.','Afronta los retos con confianza y autonomía.']},
- {c:'7.2',ce:7,t:'Actitud ante el error',d3:'Muestra esfuerzo y flexibilidad y valora el error como oportunidad.',d4:'Además, muestra actitudes colaborativas y participativas.',r:['Rechaza u oculta el error.','Acepta el error cuando se le señala.','Usa el error para mejorar.','Busca sus propios errores y los aprovecha para aprender.']},
- {c:'8.1',ce:8,t:'Colaborar en equipo',d3:'Participa con respeto y empieza a colaborar y a resolver conflictos.',d4:'Colabora activamente y establece relaciones saludables e igualitarias.',r:['No participa o dificulta el trabajo del grupo.','Participa si se le pide.','Colabora con respeto y ayuda a resolver conflictos.','Dinamiza el grupo e integra a todos.']},
- {c:'8.2',ce:8,t:'Responsabilidad en el equipo',d3:'Respeta el reparto de tareas y practica la escucha activa.',d4:'Participa en el reparto de tareas, asume responsabilidades y se comunica con eficacia.',r:['No asume su tarea.','Asume su tarea con recordatorios.','Cumple su parte y escucha a los demás.','Organiza tareas y se comunica de forma eficaz.']}
-];
-const AREAS=[
- {id:'mat',n:'Matemáticas',ciclo:'2.º ciclo · 3.º y 4.º',on:1},
- {id:'len',n:'Lengua Castellana y Literatura',ciclo:'2.º ciclo · 3.º y 4.º'},
- {id:'cmn',n:'Conocimiento del Medio Natural, Social y Cultural',ciclo:'2.º ciclo · 3.º y 4.º'}
-];
+let CES={},CRITS=[],CRIT={},SABERES=[],BLOQUES={};
+const AREAS=Object.entries(CURRICULO).map(([id,a])=>({id,n:a.n,corto:a.corto,ciclo:'2.º ciclo · 3.º y 4.º',on:1}));
+function setArea(id){const a=CURRICULO[id]||CURRICULO.mat;CES=a.ces;CRITS=a.crits;CRIT=Object.fromEntries(CRITS.map(x=>[x.c,x]));SABERES=a.saberes;BLOQUES=a.bloques;if(UI&&!CRIT[UI.crit])UI.crit=CRITS[0].c}
+
 const LVN=['','Inicio','En proceso','Conseguido','Destacado'];
 const LVC=['var(--l0)','var(--l1)','var(--l2)','var(--l3)','var(--l4)'];
-const TRI_N=['1.er trim.','2.º trim.','3.er trim.','Curso'];
-const CRIT=Object.fromEntries(CRITS.map(x=>[x.c,x]));
+const TRI_N=['1.<sup>er</sup> trim.','2.º trim.','3.<sup>er</sup> trim.','Curso'];
 
 /* ============ ESTADO ============ */
-const DEF_CONFIG=()=>({alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']]});
-let S={config:DEF_CONFIG(),months:{}};
+const DEF_CONFIG=()=>({alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']],horario:{1:[],2:[],3:[],4:[],5:[]},udActual:{},avisoSust:''});
+let S={config:DEF_CONFIG(),months:{},prog:{}};
+const PROGT=['ud','ses'];
+const toWire=p=>({id:p.id,t:p.t,ar:p.ar,f:p.f||'',a:'',c:'',txt:JSON.stringify(p.d||{})});
+function fromWire(r){let d={};try{d=JSON.parse(r.txt||'{}')}catch(e){}return {id:r.id,t:r.t,ar:r.ar||'mat',f:r.f||'',d}}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function guessTri(){const t=today();const i=S.config.tri.findIndex(([a,b])=>t>=a&&t<=b);return i<0?3:i}
 let UI={area:'mat',tab:'inicio',tri:0,crit:'1.1',fecha:today(),rub:true,modo:'nivel',alumno:null,curso:'3',filtro:'todos'};
@@ -40,13 +21,13 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.1.1';
+const APP_VERSION='1.2.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
-function loadLocal(){try{const r=localStorage.getItem(LK);if(r){const d=JSON.parse(r);S.config=Object.assign(DEF_CONFIG(),d.config||{});S.months=d.months||{}}OPS=JSON.parse(localStorage.getItem(LO)||'[]');SYNC=Object.assign({url:'',key:''},JSON.parse(localStorage.getItem(LS)||'{}'))}catch(e){}}
-function putReg(r){for(const m in S.months){const i=S.months[m].findIndex(x=>x.id===r.id);if(i>=0){S.months[m]=S.months[m].slice();S.months[m].splice(i,1)}}const m=mk(r.f);S.months[m]=(S.months[m]||[]).concat([r])}
-function dropReg(id){for(const m in S.months){const i=S.months[m].findIndex(x=>x.id===id);if(i>=0){S.months[m]=S.months[m].slice();S.months[m].splice(i,1)}}}
+function loadLocal(){try{const r=localStorage.getItem(LK);if(r){const d=JSON.parse(r);S.config=Object.assign(DEF_CONFIG(),d.config||{});S.months=d.months||{};S.prog=d.prog||{}}OPS=JSON.parse(localStorage.getItem(LO)||'[]');SYNC=Object.assign({url:'',key:''},JSON.parse(localStorage.getItem(LS)||'{}'))}catch(e){}}
+function putReg(r){if(PROGT.includes(r.t)){S.prog=Object.assign({},S.prog,{[r.id]:fromWire(r)});return}for(const m in S.months){const i=S.months[m].findIndex(x=>x.id===r.id);if(i>=0){S.months[m]=S.months[m].slice();S.months[m].splice(i,1)}}const m=mk(r.f);S.months[m]=(S.months[m]||[]).concat([r])}
+function dropReg(id){if(S.prog[id]){const p=Object.assign({},S.prog);delete p[id];S.prog=p;return}for(const m in S.months){const i=S.months[m].findIndex(x=>x.id===id);if(i>=0){S.months[m]=S.months[m].slice();S.months[m].splice(i,1)}}}
 function applyOp(o){if(o.op==='up')putReg(o.r);else if(o.op==='del')dropReg(o.id);else if(o.op==='config')S.config=Object.assign(DEF_CONFIG(),o.config)}
 function enqueue(o){if(o.op==='config')OPS=OPS.filter(x=>x.op!=='config');OPS.push(JSON.parse(JSON.stringify(o)));persist();Sync.schedule()}
 const Sync={timer:null,busy:false,
@@ -65,11 +46,12 @@ const Sync={timer:null,busy:false,
      if(OPS.length){const env=OPS.slice();await this.call({action:'push',ops:env});OPS=OPS.slice(env.length);persist()}
      const j=await this.call({action:'pull'});
      const vacia=!j.config&&!(j.regs||[]).length;
-     if(vacia&&(S.config.alumnos.length||allRegsRaw().length)){
-       OPS=[{op:'config',config:S.config}].concat(allRegsRaw().map(r=>({op:'up',r})));persist();
+     const progW=Object.values(S.prog).map(toWire);
+     if(vacia&&(S.config.alumnos.length||allRegsRaw().length||progW.length)){
+       OPS=[{op:'config',config:S.config}].concat(allRegsRaw().map(r=>({op:'up',r})),progW.map(r=>({op:'up',r})));persist();
        this.busy=false;return this.run();
      }
-     if(!vacia||!OPS.length){S.config=Object.assign(DEF_CONFIG(),j.config||{});S.months={};(j.regs||[]).forEach(r=>{const m=mk(r.f);(S.months[m]=S.months[m]||[]).push(r)});OPS.forEach(applyOp);persist();render()}
+     if(!vacia||!OPS.length){S.config=Object.assign(DEF_CONFIG(),j.config||{});S.months={};S.prog={};(j.regs||[]).forEach(r=>{if(PROGT.includes(r.t)){S.prog[r.id]=fromWire(r);return}const m=mk(r.f);(S.months[m]=S.months[m]||[]).push(r)});OPS.forEach(applyOp);persist();render()}
      setSync('ok','Sincronizado');
    }catch(e){setSync('err','Error de sincronización');console.warn(e);this.lastError=e.message}
    this.busy=false;if(OPS.length)this.schedule(4000);
@@ -129,27 +111,27 @@ const SECS={
  clase:{n:'Clase',sub:'Grupo de un vistazo'},
  alumno:{n:'Alumno',sub:'Ficha y seguimiento'},
  seneca:{n:'Séneca',sub:'Traslado de notas'},
- prog:{n:'Programación',sub:'Unidades y situaciones'},
+ prog:{n:'Programación',sub:'Unidades, diario y horario'},
  ajustes:{n:'Ajustes',sub:'Datos y copias'}
 };
-const NAV=['inicio','evaluar','clase','alumno','seneca','ajustes'];
-const MOBNAV=['inicio','evaluar','clase','alumno','seneca'];
+const NAV=['inicio','evaluar','clase','alumno','seneca','prog','ajustes'];
+const MOBNAV=['inicio','evaluar','clase','alumno','seneca','prog'];
 const cursoEsc=()=>{const d=new Date();const y=d.getMonth()>=8?d.getFullYear():d.getFullYear()-1;return `${y}/${y+1}`};
 const secVars=k=>`--navbg:var(--s-${k});--navacc:var(--a-${k})`;
 function renderChrome(){
   const k=UI.tab,sec=SECS[k];
   const root=document.documentElement.style;root.setProperty('--acc',`var(--a-${k})`);root.setProperty('--sec',`var(--s-${k})`);
   document.getElementById('side').innerHTML=`<div class="brand"><div class="logo"><img src="icons/logo.svg" alt=""></div><div class="wm">Evalú<span>app</span><small>Panel docente</small></div></div>
-   <button class="areacard area" data-act="area" style="margin:0 0 16px;padding:11px 12px"><div class="ico" style="width:34px;height:34px">${ICONS.area}</div><div style="min-width:0"><b style="font-size:14px">${esc(areaAct().n)}</b><span>Cambiar área</span></div></button>
+   <button class="areacard area" data-act="area" style="margin:0 0 16px;padding:11px 12px"><div class="ico" style="width:34px;height:34px">${ICONS.area}</div><div style="min-width:0"><b style="font-size:14px">${esc(areaAct().corto)}</b><span>Cambiar área</span></div></button>
    ${NAV.map(n=>`<button class="nav ${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}</button>`).join('')}
    <div class="foot"><div class="sync">${syncHTML()}</div></div>`;
   const showTri=['inicio','clase','alumno','seneca'].includes(k);
   document.getElementById('top').innerHTML=`<div class="toprow">
      ${k==='inicio'?`<div class="sync">${syncHTML()}</div>`
-     :`<div class="ttl"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.chev}</button><div class="ico">${ICONS[k]}</div><div>${sec.n}<small>${esc(areaAct().n)}<span class="deskonly"> · ${sec.sub}</span></small></div></div>`}
+     :`<div class="ttl"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.chev}</button><div class="ico">${ICONS[k]}</div><div>${sec.n}<small>${esc(areaAct().corto)}<span class="deskonly"> · ${sec.sub}</span></small></div></div>`}
      <div class="topright">${k==='inicio'?'':`<div class="sync">${syncHTML()}</div>`}${k!=='ajustes'?`<button class="iconbtn mobonly" data-tab="ajustes" aria-label="Ajustes">${ICONS.ajustes}</button>`:''}</div></div>
      ${showTri?`<div class="trirow"><div class="seg" id="triSeg">${TRI_N.map((n,i)=>`<button class="${UI.tri===i?'on':''}" data-tri="${i}">${n}</button>`).join('')}</div></div>`:''}`;
-  document.getElementById('tabs').innerHTML=`<div class="in">${MOBNAV.map(n=>`<button class="${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}</button>`).join('')}</div>`;
+  document.getElementById('tabs').innerHTML=`<div class="in">${MOBNAV.map(n=>`<button class="${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${n==='prog'?'Programar':SECS[n].n}</button>`).join('')}</div>`;
 }
 function resumen(){
   const als=S.config.alumnos,regs=periodRegs();
@@ -165,16 +147,16 @@ function vInicio(){
    ['clase','Mapa de calor y alertas',!r.als?'Sin alumnos':r.alertas?`${r.alertas} con alertas`:'Sin alertas'],
    ['alumno','Ficha y seguimiento',`${r.als} ${r.als===1?'alumno':'alumnos'}`],
    ['seneca','Traslado de notas',`${r.pct} % con nota`],
-   ['prog','Unidades y situaciones','Próximamente'],
+   ['prog','Unidades y diario',(()=>{const l=udsDe(UI.area);return l.length?`${l.length} ${l.length===1?'unidad':'unidades'} · ${l.filter(u=>u.d.hecha).length} impartidas`:'Sin unidades'})()],
    ['ajustes','Datos y copias',Sync.ok()?(OPS.length?`${OPS.length} pendientes`:'Sincronizado'):'Sin sincronizar']
   ];
   return `<div class="hero2"><span class="yr">${cursoEsc().replace('/',' / ')}</span><img class="cap" src="icons/logo.svg" alt=""><h1>Evalú<span>app</span></h1><p>Tu herramienta docente</p>
    <svg class="wave" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0 70 C200 20 380 110 600 66 C820 22 1000 96 1200 50 L1200 120 L0 120Z" fill="rgba(94,230,204,.10)"/><path d="M0 92 C240 50 420 120 640 86 C860 52 1020 110 1200 78 L1200 120 L0 120Z" fill="rgba(72,140,230,.12)"/></svg></div>
   <button class="areacard" data-act="area"><div class="ico">${ICONS.area}</div><div><b>${esc(areaAct().n)}</b><span>2.º ciclo · ${TRI_N[UI.tri]==='Curso'?'curso completo':TRI_N[UI.tri].replace('trim.','trimestre')}</span></div><div class="chg">Cambiar ${ICONS.chev.replace('<svg','<svg width="16" height="16"')}</div></button>
-  <div class="tiles">${tiles.map(([k,sub,live])=>`<button class="tile ${k==='prog'?'soon':''}" ${k==='prog'?'data-act="prox"':`data-tab="${k}"`} style="--ts:var(--t-${k});--ta:var(--a-${k})">${ICONS[k]}<b>${SECS[k].n}</b><span class="sub">${sub}</span><span class="live">${esc(live)}</span></button>`).join('')}</div>`;
+  <div class="tiles">${tiles.map(([k,sub,live])=>`<button class="tile" data-tab="${k}" style="--ts:var(--t-${k});--ta:var(--a-${k})">${ICONS[k]}<b>${SECS[k].n}</b><span class="sub">${sub}</span><span class="live">${esc(live)}</span></button>`).join('')}</div>`;
 }
 function areaModal(){
-  modal(`<h3>Área</h3>${AREAS.map(a=>`<button class="opt ${a.id===UI.area?'on':''}" data-area="${a.id}" ${a.on?'':'disabled'}><div><b>${esc(a.n)}</b><span>${a.ciclo}</span></div><span class="badge">${a.id===UI.area?'Activa':a.on?'Disponible':'Próximamente'}</span></button>`).join('')}<p class="small muted" style="margin:14px 2px 0">El alumnado es el mismo en todas las áreas; los criterios y las notas son propios de cada una.</p><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(b&&!b.disabled){UI.area=b.dataset.area;try{localStorage.setItem('evaluapp-area',UI.area)}catch(_){ }close();render()}})});
+  modal(`<h3>Área</h3>${AREAS.map(a=>`<button class="opt ${a.id===UI.area?'on':''}" data-area="${a.id}" ${a.on?'':'disabled'}><div><b>${esc(a.n)}</b><span>${a.ciclo}</span></div><span class="badge">${a.id===UI.area?'Activa':a.on?'Disponible':'Próximamente'}</span></button>`).join('')}<p class="small muted" style="margin:14px 2px 0">El alumnado es el mismo en todas las áreas; los criterios y las notas son propios de cada una.</p><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const b=e.target.closest('[data-area]');if(b&&!b.disabled){UI.area=b.dataset.area;setArea(UI.area);try{localStorage.setItem('evaluapp-area',UI.area)}catch(_){ }close();render()}})});
 }
 function toast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>el.classList.remove('show'),2200)}
 function modal(html,onMount){const bg=document.createElement('div');bg.className='modal-bg';bg.innerHTML=`<div class="modal">${html}</div>`;document.body.appendChild(bg);const close=()=>bg.remove();bg.addEventListener('click',e=>{if(e.target===bg||e.target.closest('[data-close]'))close()});onMount&&onMount(bg.querySelector('.modal'),close);return close}
@@ -186,7 +168,8 @@ function descargar(filename,data,type='text/plain'){const url=URL.createObjectUR
 function vEvaluar(){
   const als=alumnosOrd();
   if(!als.length)return `<h2>Evaluar</h2><div class="card empty"><b>Aún no hay alumnos</b>Añádelos en Ajustes o carga el ejemplo para probar la app.<div class="btns" style="justify-content:center;margin-top:14px"><button class="btn pri" data-go="ajustes">Ir a Ajustes</button><button class="btn" data-act="demo">Cargar ejemplo</button></div></div>`;
-  const cr=CRIT[UI.crit];
+  const vis=critsVisibles();if(!vis.some(x=>x.c===UI.crit))UI.crit=vis[0].c;
+  const cr=CRIT[UI.crit];const ucurs=udsEnCurso().filter(u=>(u.d.crits||[]).length);
   const regsHoy=allRegs().filter(r=>r.f===UI.fecha);
   const shown=als.filter(a=>UI.filtro==='todos'||a.curso===UI.filtro);
   return `<h2>Evaluar</h2>
@@ -195,9 +178,10 @@ function vEvaluar(){
       <div class="field" style="flex:1;min-width:150px"><label>Fecha</label><input type="date" id="fecha" value="${UI.fecha}"></div>
       <div class="field" style="flex:1;min-width:150px"><label>Curso</label><div class="seg" id="filtro">${[['todos','Todos'],['3','3.º'],['4','4.º']].map(([k,n])=>`<button data-filtro="${k}" class="${UI.filtro===k?'on':''}">${n}</button>`).join('')}</div></div>
     </div>
-    <div class="critbar">${CRITS.map(x=>`<button class="chip ${UI.crit===x.c?'on':''}" data-crit="${x.c}">${x.c}${x.core?'<span class="core">★</span>':''}</button>`).join('')}</div>
+    ${ucurs.length?`<button class="udbar ${UI.soloUd?'on':''}" data-act="soloUd"><span>${UI.soloUd?'Solo los criterios de':'Ver solo los criterios de'}</span><b>${ucurs.map(u=>esc(u.d.titulo)+(UI.filtro==='todos'&&udCurso(u)!=='ambos'?' ('+CURSO_N[udCurso(u)]+')':'')).join(' y ')}</b><span class="sw2">${UI.soloUd?'Ver todos':'Filtrar'}</span></button>`:''}
+    <div class="critbar">${vis.map(x=>`<button class="chip ${UI.crit===x.c?'on':''}" data-crit="${x.c}">${x.c}${x.core?'<span class="core">★</span>':''}</button>`).join('')}</div>
     <div class="critinfo"><div><div class="ce">CE${cr.ce} · ${CES[cr.ce]}</div><div class="t">${cr.c} ${esc(cr.t)}</div>
-      <div class="small muted" style="margin-top:4px">${cr.d3?`<b>3.º:</b> ${esc(cr.d3)}<br>`:''}<b>4.º:</b> ${esc(cr.d4)}</div></div>
+      <div class="small muted" style="margin-top:4px">${UI.filtro!=='4'&&cr.d3?`<b>3.º:</b> ${esc(cr.d3)}${UI.filtro==='todos'?'<br>':''}`:''}${UI.filtro!=='3'?`<b>4.º:</b> ${esc(cr.d4)}`:''}</div></div>
       <button class="btn sm" data-act="rub">${UI.rub?'Ocultar rúbrica':'Ver rúbrica'}</button></div>
     ${(()=>{const ti=S.config.tri.findIndex(([x,y])=>UI.fecha>=x&&UI.fecha<=y);const rg=allRegs().filter(r=>r.t==='niv'&&r.c===cr.c&&(ti<0||(r.f>=S.config.tri[ti][0]&&r.f<=S.config.tri[ti][1])));const ap=shown.filter(al=>aplica(al,cr.c));const ev=ap.filter(al=>rg.some(r=>r.a===al.id)).length;const p=ap.length?Math.round(ev/ap.length*100):0;return `<div><div class="prog"><i style="width:${p}%"></i></div><div class="small muted" style="margin-top:6px">${ev} de ${ap.length} alumnos evaluados en este criterio${ti>=0?' este trimestre':''} · ${p} %</div></div>`})()}
     ${UI.rub?`<div class="rub">${cr.r.map((t,i)=>`<div><b><span class="sw" style="background:${LVC[i+1]}"></span>${i+1} · ${LVN[i+1]}</b>${esc(t)}</div>`).join('')}</div>`:''}
@@ -299,6 +283,7 @@ function senecaData(curso){
 function vSeneca(){
   const {als,crs,rows}=senecaData(UI.curso);
   return `<h2>Traslado a Séneca · ${TRI_N[UI.tri]}</h2>
+  ${CURRICULO[UI.area].nota?`<div class="note" style="margin-bottom:10px">${esc(CURRICULO[UI.area].nota)}</div>`:''}
   <div class="note">Nota de 1 a 10 por criterio, en el mismo orden que el cuaderno de Séneca. Introdúcelas allí y Séneca calculará la nota del área con sus porcentajes. Las casillas vacías son criterios sin evaluar en este periodo.</div>
   <div class="g2b" style="margin:12px 0"><div class="seg" style="grid-column:1/-1">${['3','4'].map(c=>`<button data-curso="${c}" class="${UI.curso===c?'on':''}">${c}.º</button>`).join('')}</div>
    <button class="btn" data-act="copySen">Copiar tabla</button><button class="btn pri" data-act="csvSen">Descargar CSV</button></div>
@@ -347,9 +332,207 @@ function vAjustes(){
 }
 
 /* ============ RENDER + EVENTOS ============ */
-const VIEWS={inicio:vInicio,evaluar:vEvaluar,clase:vClase,alumno:vAlumno,seneca:vSeneca,ajustes:vAjustes};
+
+/* ============ PROGRAMACIÓN ============ */
+const INSTR=['Observación directa','Rúbrica','Cuaderno del alumnado','Prueba escrita','Prueba oral','Producto final','Portfolio','Lista de cotejo','Autoevaluación','Coevaluación'];
+const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const may1=t=>t.replace(/^./,c=>c.toUpperCase());
+const fLarga=f=>{const d=new Date(f+'T12:00:00');return `${DIAS[d.getDay()]}, ${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`};
+const addDias=(f,n)=>{const d=new Date(f+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const lunesDe=f=>{const d=new Date(f+'T12:00:00');const w=d.getDay()||7;return addDias(f,1-w)};
+const areaN=id=>id&&CURRICULO[id]?CURRICULO[id].corto:'';
+const CURSO_N={'3':'3.º','4':'4.º',ambos:'3.º y 4.º'};
+const progList=(t,ar)=>Object.values(S.prog).filter(p=>p.t===t&&(!ar||p.ar===ar));
+const udCurso=u=>u.d.curso||'ambos';
+const udPara=(u,c)=>!c||c==='todos'||udCurso(u)==='ambos'||udCurso(u)===c;
+const udsDe=(ar,c)=>progList('ud',ar).filter(u=>udPara(u,c)).sort((a,b)=>((a.d.tri??0)-(b.d.tri??0))||String(a.d.ini||'').localeCompare(String(b.d.ini||''))||String(a.d.titulo||'').localeCompare(String(b.d.titulo||''),'es'));
+function saveProg(p){S.prog=Object.assign({},S.prog,{[p.id]:p});enqueue({op:'up',r:toWire(p)})}
+function delProg(id){dropReg(id);enqueue({op:'del',id})}
+const actKey=(ar,c)=>`${ar}-${c}`;
+const udActualDe=(ar,c)=>{const id=(S.config.udActual||{})[actKey(ar,c)];return id&&S.prog[id]?S.prog[id]:null};
+const udEstado=u=>['3','4'].some(c=>(S.config.udActual||{})[actKey(u.ar,c)]===u.id)?'curso':u.d.hecha?'hecha':'pend';
+const EST_N={pend:'Pendiente',curso:'En curso',hecha:'Impartida'};
+const cursosDe=c=>c==='ambos'?['3','4']:[c];
+function sesUsa(p,udId){const d=p.d||{};return d.ud===udId||(d.c3&&d.c3.ud===udId)||(d.c4&&d.c4.ud===udId)}
+const sesDiario=udId=>progList('ses').filter(p=>sesUsa(p,udId)&&p.f<=today()).length;
+UI.ptab='uds';UI.pfecha=today();UI.soloUd=true;UI.pcurso='todos';
+
+function cursoSeg(){return `<div class="seg" style="margin-bottom:12px">${[['todos','Ambos cursos'],['3','3.º'],['4','4.º']].map(([k,n])=>`<button data-pcurso="${k}" class="${UI.pcurso===k?'on':''}">${n}</button>`).join('')}</div>`}
+function vProg(){
+  const tabs=[['uds','Unidades'],['tri','Trimestres'],['dia','Diario'],['hor','Horario']];
+  const body={uds:vUds,tri:vTris,dia:vDiario,hor:vHorario}[UI.ptab]();
+  return `<h2>Programación</h2><div class="seg" style="margin-bottom:12px">${tabs.map(([k,n])=>`<button data-ptab="${k}" class="${UI.ptab===k?'on':''}">${n}</button>`).join('')}</div>${['uds','tri'].includes(UI.ptab)?cursoSeg():''}${body}`;
+}
+function udCard(u){
+  const e=udEstado(u),nc=(u.d.crits||[]).length,ds=sesDiario(u.id);
+  return `<button class="ucard" data-ud="${u.id}"><span class="utag ${u.d.tipo==='SdA'?'sda':''}">${u.d.tipo==='SdA'?'SdA':'UD'}</span><span class="ubody"><b>${esc(u.d.titulo||'Sin título')}</b><span>${CURSO_N[udCurso(u)]} · ${u.d.ses||0} sesiones · ${nc} ${nc===1?'criterio':'criterios'}${ds?` · ${ds} en el diario`:''}</span></span><span class="uest ${e}">${EST_N[e]}</span></button>`;
+}
+function vUds(){
+  const us=udsDe(UI.area,UI.pcurso);
+  const btn=`<button class="btn pri" data-act="nuevaUd" style="width:100%;margin-bottom:14px">+ Nueva unidad o situación de aprendizaje</button>`;
+  if(!us.length)return btn+`<div class="card empty"><b>Aún no hay unidades de ${esc(areaN(UI.area))}${UI.pcurso!=='todos'?' para '+CURSO_N[UI.pcurso]:''}</b>Crea la primera con el botón de arriba. Podrás asociarle criterios, saberes, actividades e instrumentos.</div>`;
+  return btn+[0,1,2].map(t=>{const l=us.filter(u=>(u.d.tri??0)===t);const ses=l.reduce((a,u)=>a+(+u.d.ses||0),0);
+    return `<div class="card" style="margin-bottom:12px"><h3 style="display:flex;justify-content:space-between;gap:10px"><span>${TRI_N[t].replace('trim.','trimestre')}</span><span class="muted small">${l.length} ${l.length===1?'unidad':'unidades'} · ${ses} sesiones</span></h3>${l.length?l.map(udCard).join(''):'<div class="muted small">Sin unidades en este trimestre.</div>'}</div>`}).join('');
+}
+function coberturaCard(c){
+  const us=udsDe(UI.area,c);const crs=CRITS.filter(x=>!(x.solo4&&c==='3'));
+  const usados=new Set(us.flatMap(u=>u.d.crits||[]));const faltan=crs.filter(x=>!usados.has(x.c));
+  return `<div class="card"><h3>Criterios programados en ${CURSO_N[c]} · ${crs.length-faltan.length} de ${crs.length}</h3>
+   <div class="cov">${crs.map(x=>`<span class="covc ${usados.has(x.c)?'on':''}" title="${esc(x.t)}">${x.c}</span>`).join('')}</div>
+   ${faltan.length?`<p class="small muted" style="margin:10px 0 0">Sin asociar a ninguna unidad: ${faltan.map(x=>`${x.c} ${esc(x.t)}`).join(' · ')}.</p>`:'<p class="small muted" style="margin:10px 0 0">Todos los criterios están en alguna unidad.</p>'}</div>`;
+}
+function vTris(){
+  const us=udsDe(UI.area,UI.pcurso);
+  return `<div class="tris">${[0,1,2].map(t=>{const l=us.filter(u=>(u.d.tri??0)===t);const ses=l.reduce((a,u)=>a+(+u.d.ses||0),0);const hechas=l.filter(u=>u.d.hecha).length;const pct=l.length?Math.round(hechas/l.length*100):0;
+    return `<div class="card"><div class="trit">${TRI_N[t].replace('trim.','trimestre')}</div><div class="trinum"><b>${l.length}</b> ${l.length===1?'unidad':'unidades'} · <b>${ses}</b> sesiones</div><div class="prog"><i style="width:${pct}%"></i></div><div class="small muted" style="margin:6px 0 10px">${hechas} de ${l.length} impartidas</div>${l.map(u=>{const e=udEstado(u);return `<button class="tline" data-ud="${u.id}"><span class="dotst ${e}"></span><span>${esc(u.d.titulo||'Sin título')}</span><span class="muted">${UI.pcurso==='todos'?CURSO_N[udCurso(u)]+' · ':''}${u.d.ses||0} s.</span></button>`}).join('')||'<div class="muted small">Sin unidades.</div>'}</div>`}).join('')}</div>
+  <div class="grid2" style="margin-top:12px">${(UI.pcurso==='todos'?['3','4']:[UI.pcurso]).map(coberturaCard).join('')}</div>`;
+}
+function udModal(id){
+  const ex=id?S.prog[id]:null;
+  const u=ex?JSON.parse(JSON.stringify(ex)):{id:'ud-'+uid(),t:'ud',ar:UI.area,f:'',d:{tipo:'UD',curso:UI.pcurso==='todos'?'ambos':UI.pcurso,titulo:'',tri:UI.tri<3?UI.tri:0,ses:8,ini:'',fin:'',desc:'',crits:[],sab:[],act:'',inst:[],hecha:false}};
+  u.d.curso=u.d.curso||'ambos';
+  const est=ex?udEstado(ex):'pend';
+  const chips=(list,sel,attr)=>list.map(([v,l,dis])=>`<button type="button" class="tchip ${sel.includes(v)?'on':''}" data-${attr}="${esc(v)}" ${dis?'disabled':''}>${l}</button>`).join('');
+  modal(`<h3>${ex?'Editar':'Nueva'} · ${esc(areaN(u.ar))}</h3><div class="stack">
+   <div class="seg" id="udTipo"><button data-v="UD" class="${u.d.tipo==='UD'?'on':''}">Unidad didáctica</button><button data-v="SdA" class="${u.d.tipo==='SdA'?'on':''}">Situación de aprendizaje</button></div>
+   <div class="field"><label>Curso</label><div class="seg" id="udCur">${[['3','3.º'],['4','4.º'],['ambos','Ambos']].map(([k,n])=>`<button data-v="${k}" class="${u.d.curso===k?'on':''}">${n}</button>`).join('')}</div></div>
+   <div class="field"><label>Título</label><input type="text" id="udTit" value="${esc(u.d.titulo)}" maxlength="120" placeholder="Por ejemplo: Somos comerciantes"></div>
+   <div class="field"><label>Trimestre</label><div class="seg" id="udTri">${[0,1,2].map(t=>`<button data-v="${t}" class="${(u.d.tri??0)===t?'on':''}">${TRI_N[t]}</button>`).join('')}</div></div>
+   <div class="g3"><div class="field"><label>Sesiones</label><input type="number" id="udSes" min="1" max="99" value="${u.d.ses||''}"></div><div class="field"><label>Inicio</label><input type="date" id="udIni" value="${u.d.ini||''}"></div><div class="field"><label>Fin</label><input type="date" id="udFin" value="${u.d.fin||''}"></div></div>
+   <div class="field"><label>Descripción o producto final</label><textarea id="udDesc" style="min-height:80px" placeholder="Reto, contexto o producto que elaborará el alumnado">${esc(u.d.desc)}</textarea></div>
+   <div class="field"><label>Criterios de evaluación</label><div class="tchips" id="udCrit">${chips(CRITS.map(x=>[x.c,`<b>${x.c}</b> ${esc(x.t)}${x.solo4?' (solo 4.º)':''}`]),u.d.crits||[],'c')}</div></div>
+   <div class="field"><label>Saberes básicos</label>${Object.entries(BLOQUES).map(([b,bn])=>{const l=SABERES.filter(([c])=>c.split('.')[2]===b||c.startsWith('EP.'+b));return l.length?`<div class="small muted" style="margin:6px 0 4px">${b}. ${esc(bn)}</div><div class="tchips" data-grp="sab">${chips(l.map(([c,t])=>[c,esc(t)]),u.d.sab||[],'s')}</div>`:''}).join('')}</div>
+   <div class="field"><label>Actividades y tareas</label><textarea id="udAct" placeholder="Una por línea">${esc(u.d.act)}</textarea></div>
+   <div class="field"><label>Instrumentos de evaluación</label><div class="tchips" id="udInst">${chips(INSTR.map(x=>[x,esc(x)]),u.d.inst||[],'i')}</div></div>
+   <div class="field"><label>Estado</label><div class="seg" id="udEst">${Object.entries(EST_N).map(([k,n])=>`<button data-v="${k}" class="${est===k?'on':''}">${n}</button>`).join('')}</div><div class="small muted">«En curso» la convierte en la unidad actual de ${'su curso'} y filtra los criterios en Evaluar.</div></div>
+  </div><div class="btns" style="justify-content:space-between;margin-top:16px">${ex?'<button class="btn danger" id="udDel">Eliminar</button>':'<span></span>'}<div class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="udOk">Guardar</button></div></div>`,(m,close)=>{
+    m.addEventListener('click',e=>{
+      const sb=e.target.closest('.seg button');if(sb){e.preventDefault();sb.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===sb));return}
+      const tc=e.target.closest('.tchip');if(tc&&!tc.disabled){e.preventDefault();tc.classList.toggle('on');return}
+    });
+    const v=sel=>m.querySelector(sel+' .on')?.dataset.v;
+    const quitarActual=(act,id)=>{Object.keys(act).forEach(k=>{if(act[k]===id)act[k]=''})};
+    if(m.querySelector('#udDel'))m.querySelector('#udDel').onclick=()=>{confirmar('¿Eliminar esta unidad? Las sesiones del diario que la usen se quedarán sin unidad.','Eliminar',()=>{delProg(u.id);const act=Object.assign({},S.config.udActual||{});quitarActual(act,u.id);S.config.udActual=act;saveConfig();close();render();toast('Unidad eliminada')})};
+    m.querySelector('#udOk').onclick=()=>{
+      const tit=m.querySelector('#udTit').value.trim();if(!tit){toast('Ponle un título');m.querySelector('#udTit').focus();return}
+      Object.assign(u.d,{tipo:v('#udTipo')||'UD',curso:v('#udCur')||'ambos',titulo:tit,tri:+(v('#udTri')||0),ses:+m.querySelector('#udSes').value||0,ini:m.querySelector('#udIni').value,fin:m.querySelector('#udFin').value,desc:m.querySelector('#udDesc').value.trim(),act:m.querySelector('#udAct').value.trim(),
+        crits:[...m.querySelectorAll('#udCrit .tchip.on')].map(b=>b.dataset.c),sab:[...m.querySelectorAll('[data-grp="sab"] .tchip.on')].map(b=>b.dataset.s),inst:[...m.querySelectorAll('#udInst .tchip.on')].map(b=>b.dataset.i)});
+      const ne=v('#udEst')||'pend';u.d.hecha=ne==='hecha';
+      saveProg(u);
+      const act=Object.assign({},S.config.udActual||{});const antes=JSON.stringify(act);
+      quitarActual(act,u.id);
+      if(ne==='curso')cursosDe(u.d.curso).forEach(c=>act[actKey(u.ar,c)]=u.id);
+      if(JSON.stringify(act)!==antes){S.config.udActual=act;saveConfig()}
+      close();render();toast('Unidad guardada');
+    };
+  });
+}
+/* ---- horario ---- */
+function franjasDe(f){const w=new Date(f+'T12:00:00').getDay();return (S.config.horario||{})[w]||[]}
+function vHorario(){
+  const H=S.config.horario||{};
+  const opts=sel=>Object.entries(CURRICULO).map(([id,a])=>`<option value="${id}" ${sel===id?'selected':''}>${esc(a.corto)}</option>`).join('')+`<option value="otro" ${sel==='otro'?'selected':''}>Otra (recreo, inglés…)</option>`;
+  return `<div class="note" style="margin-bottom:12px">Tu horario semanal. El diario lo usa para preparar cada día y el plan para quien te sustituya.</div>`+[1,2,3,4,5].map(w=>`<div class="card" style="margin-bottom:12px"><h3>${may1(DIAS[w])}</h3>${(H[w]||[]).map((fr,i)=>`<div class="frow"><input type="time" data-hw="${w}" data-hi="${i}" data-hk="ini" value="${fr.ini||''}"><input type="time" data-hw="${w}" data-hi="${i}" data-hk="fin" value="${fr.fin||''}"><select data-hw="${w}" data-hi="${i}" data-hk="ar">${opts(fr.ar)}</select>${fr.ar==='otro'?`<input type="text" data-hw="${w}" data-hi="${i}" data-hk="lab" value="${esc(fr.lab||'')}" placeholder="Qué es" class="flab">`:''}<button class="ic" data-hdel="${w}|${i}" aria-label="Quitar">✕</button></div>`).join('')||'<div class="muted small" style="margin-bottom:8px">Sin franjas.</div>'}<div class="g2b" style="margin-top:8px"><button class="btn sm" data-hadd="${w}">+ Añadir franja</button>${w>1?`<button class="btn sm" data-hcopy="${w}">Copiar del ${DIAS[w-1]}</button>`:'<span></span>'}</div></div>`).join('')+
+  `<div class="card stack"><h3>Indicaciones generales para sustitutos</h3><textarea id="avisoSust" placeholder="Rutinas del aula, dónde están los materiales, normas, a quién acudir…">${esc(S.config.avisoSust||'')}</textarea><div class="small muted">Saldrá al principio de cada plan exportado. No pongas aquí datos personales ni de salud del alumnado.</div></div>`;
+}
+function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);fn(H);S.config.horario=H;saveConfig();render()}
+/* ---- diario ---- */
+const sesId=(f,i)=>`ses-${f}-${i}`;
+function sesDatos(p){const d=p?JSON.parse(JSON.stringify(p.d)):{};
+  if(d.junto===undefined){d.junto=!d.c3&&!d.c4&&!!(d.ud||d.act||d.mat)?true:(d.junto||false)}
+  if(d.junto&&!d.c3&&(d.ud||d.act||d.mat)){d.c3={ud:d.ud||'',act:d.act||'',mat:d.mat||''}}
+  d.c3=d.c3||{};d.c4=d.c4||{};return d}
+function bloqueCurso(i,c,d,ar,lab){
+  const x=d['c'+c]||{};const lc=c==='j'?'ambos':c;const key=c==='j'?'c3':'c'+c;const y=d[key]||{};
+  return `<div class="cblk">${lab?`<div class="clab">${lab}</div>`:''}<select data-sf="${i}" data-sk="${key}.ud"><option value="">Sin unidad</option>${udsDe(ar,lc==='ambos'?'todos':lc).map(u=>`<option value="${u.id}" ${y.ud===u.id?'selected':''}>${esc(u.d.titulo)}${lc==='ambos'?' ('+CURSO_N[udCurso(u)]+')':''}</option>`).join('')}</select>
+   <textarea data-sf="${i}" data-sk="${key}.act" placeholder="Qué se va a hacer (página, actividad, explicación…)" style="min-height:76px">${esc(y.act||'')}</textarea>
+   <input type="text" data-sf="${i}" data-sk="${key}.mat" placeholder="Materiales" value="${esc(y.mat||'')}"></div>`;
+}
+function vDiario(){
+  const f=UI.pfecha,frs=franjasDe(f),w=new Date(f+'T12:00:00').getDay();
+  const nav=`<div class="daynav"><button class="iconbtn" data-pday="-1" aria-label="Día anterior" style="transform:rotate(180deg)">${ICONS.chev}</button><div><input type="date" id="pfecha" value="${f}"><div class="small muted" style="text-align:center;margin-top:4px">${may1(fLarga(f))}</div></div><button class="iconbtn" data-pday="1" aria-label="Día siguiente">${ICONS.chev}</button></div>`;
+  const exp=`<div class="g2b" style="margin:12px 0"><button class="btn" data-act="expDia">Exportar este día</button><button class="btn pri" data-act="expSem">Exportar la semana</button></div>`;
+  if(w===0||w===6)return nav+`<div class="card empty"><b>Fin de semana</b>Elige un día lectivo.</div>`;
+  if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b>Configura tu horario semanal para preparar el diario.<div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
+  const notas=S.prog[sesId(f,'n')];
+  return nav+exp+frs.map((fr,i)=>{
+    const p=S.prog[sesId(f,i)];const esArea=!!CURRICULO[fr.ar];const d=sesDatos(p);
+    const tit=esArea?areaN(fr.ar):(fr.lab||'Otra actividad');
+    return `<div class="card sescard" style="--sc:var(--t-${{mat:'evaluar',len:'alumno',cmn:'clase',pla:'seneca'}[fr.ar]||'ajustes'})"><div class="seshead"><span class="hora">${esc(fr.ini||'')}–${esc(fr.fin||'')}</span><b>${esc(tit)}</b></div>
+     ${esArea?`<button class="junto ${d.junto?'on':''}" data-junto="${i}"><span class="tg"></span>Lo mismo para 3.º y 4.º</button>
+      ${d.junto?bloqueCurso(i,'j',d,fr.ar,''):bloqueCurso(i,'3',d,fr.ar,'3.º')+bloqueCurso(i,'4',d,fr.ar,'4.º')}`
+     :`<input type="text" data-sf="${i}" data-sk="act" placeholder="Indicaciones (opcional)" value="${esc((p&&p.d.act)||'')}" style="margin-top:10px">`}</div>`}).join('')+
+   `<div class="card stack"><h3>Avisos de este día</h3><textarea data-sf="n" data-sk="notas" placeholder="Salidas, cambios, quién recoge a quién…">${esc(notas?notas.d.notas:'')}</textarea></div>`;
+}
+function guardarSesion(i,k,val){
+  const f=UI.pfecha,id=sesId(f,i),fr=i==='n'?null:franjasDe(f)[+i];
+  const p=S.prog[id]?JSON.parse(JSON.stringify(S.prog[id])):{id,t:'ses',ar:fr?(CURRICULO[fr.ar]?fr.ar:'otro'):'otro',f,d:{}};
+  if(fr){p.d.ini=fr.ini;p.d.fin=fr.fin;p.d.far=fr.ar;p.d.lab=fr.lab||''}
+  if(fr&&CURRICULO[fr.ar]){const d=sesDatos(p);Object.assign(p.d,{junto:d.junto,c3:d.c3,c4:d.c4});delete p.d.ud;delete p.d.act;delete p.d.mat}
+  if(k.includes('.')){const [a,b]=k.split('.');p.d[a]=Object.assign({},p.d[a]||{},{[b]:val})}else p.d[k]=val;
+  saveProg(p);
+}
+function toggleJunto(i){
+  const f=UI.pfecha,id=sesId(f,i),fr=franjasDe(f)[+i];
+  const p=S.prog[id]?JSON.parse(JSON.stringify(S.prog[id])):{id,t:'ses',ar:CURRICULO[fr.ar]?fr.ar:'otro',f,d:{ini:fr.ini,fin:fr.fin,far:fr.ar}};
+  const d=sesDatos(p);p.d=Object.assign(p.d,{junto:!d.junto,c3:d.c3,c4:d.c4});delete p.d.ud;delete p.d.act;delete p.d.mat;
+  saveProg(p);render();
+}
+/* ---- exportar plan ---- */
+function bloquesPlan(fechas){
+  const B=[{k:'h1',t:'Plan de clase · 3.º y 4.º'},{k:'p',t:fechas.length>1?`Semana del ${fLarga(fechas[0])} al ${fLarga(fechas[fechas.length-1])}`:may1(fLarga(fechas[0]))}];
+  if(S.config.avisoSust)B.push({k:'h2',t:'Indicaciones generales'},...S.config.avisoSust.split('\n').filter(x=>x.trim()).map(t=>({k:'p',t})));
+  const parte=(y,lab)=>{const u=y.ud&&S.prog[y.ud]?S.prog[y.ud].d:null;
+    if(lab||u)B.push({k:'p',t:`${lab?lab+' — ':''}${u?`${u.tipo==='SdA'?'Situación de aprendizaje':'Unidad'}: ${u.titulo}`:'Sin unidad'}`});
+    if(y.act)y.act.split('\n').filter(x=>x.trim()).forEach(t=>B.push({k:'li',t}));else B.push({k:'p',t:'Sin indicaciones.'});
+    if(y.mat)B.push({k:'p',t:'Materiales: '+y.mat})};
+  fechas.forEach(f=>{
+    const frs=franjasDe(f);if(!frs.length)return;
+    B.push({k:'h2',t:may1(fLarga(f))});
+    const n=S.prog[sesId(f,'n')];if(n&&n.d.notas)B.push({k:'p',t:'Avisos: '+n.d.notas});
+    frs.forEach((fr,i)=>{
+      const p=S.prog[sesId(f,i)];const esArea=!!CURRICULO[fr.ar];
+      B.push({k:'h3',t:`${fr.ini||''}–${fr.fin||''} · ${esArea?areaN(fr.ar):(fr.lab||'Otra actividad')}`});
+      if(!esArea){if(p&&p.d.act)B.push({k:'p',t:p.d.act});return}
+      const d=sesDatos(p);
+      const vacio=y=>!y||(!y.ud&&!y.act&&!y.mat);
+      if(d.junto?vacio(d.c3):(vacio(d.c3)&&vacio(d.c4))){B.push({k:'p',t:'Sin indicaciones.'});return}
+      if(d.junto)parte(d.c3,'3.º y 4.º');else{parte(d.c3,'3.º');parte(d.c4,'4.º')}
+    });
+  });
+  return B;
+}
+function fechasExport(sem){if(!sem)return [UI.pfecha];const l=lunesDe(UI.pfecha);return [0,1,2,3,4].map(n=>addDias(l,n))}
+function exportModal(sem){
+  const fechas=fechasExport(sem);
+  modal(`<h3>Exportar ${sem?'la semana':'este día'}</h3><p class="small muted" style="margin-top:-6px">${sem?`Del ${fLarga(fechas[0])} al ${fLarga(fechas[4])}`:may1(fLarga(fechas[0]))}</p>
+   <button class="opt" id="exPdf"><div><b>PDF</b><span>Se abre la ventana de imprimir: elige «Guardar como PDF».</span></div></button>
+   <button class="opt" id="exDoc" ${Sync.ok()?'':'disabled'}><div><b>Documento de Google</b><span>${Sync.ok()?'Se crea en tu Drive de educaand, listo para compartir.':'Necesita la hoja de Google conectada.'}</span></div></button>
+   <div id="exRes"></div><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{
+    m.querySelector('#exPdf').onclick=()=>{close();imprimir(bloquesPlan(fechas))};
+    m.querySelector('#exDoc').onclick=async()=>{const b=m.querySelector('#exDoc');b.disabled=true;b.querySelector('span').textContent='Creando el documento…';
+      try{const j=await Sync.call({action:'doc',titulo:`Plan de clase · ${sem?'semana del '+fmtF(fechas[0]):fmtF(fechas[0])}`,bloques:bloquesPlan(fechas)});
+        if(!j.url)throw new Error('Actualiza el script de la hoja para poder crear documentos.');
+        m.querySelector('#exRes').innerHTML=`<a class="btn pri" style="display:block;text-align:center;margin-top:12px;text-decoration:none" href="${esc(j.url)}" target="_blank" rel="noopener">Abrir el documento</a>`;b.querySelector('span').textContent='Documento creado en tu Drive.'}
+      catch(e){b.disabled=false;b.querySelector('span').textContent=/desconocida/.test(e.message)?'Actualiza el script de la hoja (versión 1.2) para crear documentos.':e.message}};
+  });
+}
+function imprimir(B){
+  let el=document.getElementById('print');if(!el){el=document.createElement('div');el.id='print';document.body.appendChild(el)}
+  let html='',ul=false;
+  B.forEach(b=>{if(b.k==='li'){if(!ul){html+='<ul>';ul=true}html+=`<li>${esc(b.t)}</li>`;return}if(ul){html+='</ul>';ul=false}html+=`<${b.k==='p'?'p':b.k}>${esc(b.t)}</${b.k==='p'?'p':b.k}>`});
+  if(ul)html+='</ul>';
+  el.innerHTML=html;document.body.classList.add('printing');
+  const fin=()=>{document.body.classList.remove('printing');window.removeEventListener('afterprint',fin)};
+  window.addEventListener('afterprint',fin);setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},60);
+}
+/* ---- Evaluar: unidad en curso ---- */
+function udsEnCurso(){const cs=UI.filtro==='todos'?['3','4']:[UI.filtro];const l=[];cs.forEach(c=>{const u=udActualDe(UI.area,c);if(u&&!l.includes(u))l.push(u)});return l}
+function critsVisibles(){const us=udsEnCurso();const set=new Set(us.flatMap(u=>u.d.crits||[]));if(UI.soloUd&&set.size){const l=CRITS.filter(x=>set.has(x.c));if(l.length)return l}return CRITS}
+const VIEWS={inicio:vInicio,prog:vProg,evaluar:vEvaluar,clase:vClase,alumno:vAlumno,seneca:vSeneca,ajustes:vAjustes};
 function render(){
-  const act=document.activeElement;if(act&&['alNom','syUrl','syKey'].includes(act.id))return;
+  const act=document.activeElement;if(act&&(['alNom','syUrl','syKey'].includes(act.id)||(act.closest&&act.closest('#view')&&(act.tagName==='TEXTAREA'||(act.tagName==='INPUT'&&act.type==='text')))))return;
   renderChrome();document.getElementById('view').innerHTML=VIEWS[UI.tab]();
   document.body.dataset.tab=UI.tab;
 }
@@ -387,6 +570,14 @@ document.addEventListener('click',e=>{
   const t=e.target.closest('button,a,[data-cell]');if(!t)return;
   const d=t.dataset;
   if(d.tab){UI.tab=d.tab;render();scrollTo(0,0);return}
+  if(d.ptab){UI.ptab=d.ptab;render();return}
+  if(d.pcurso){UI.pcurso=d.pcurso;render();return}
+  if(d.junto!==undefined){toggleJunto(d.junto);return}
+  if(d.ud){udModal(d.ud);return}
+  if(d.pday){UI.pfecha=addDias(UI.pfecha,+d.pday);render();return}
+  if(d.hadd){setHorario(H=>{const l=H[d.hadd];const last=l[l.length-1];l.push({ini:last?last.fin:'09:00',fin:'',ar:UI.area})});return}
+  if(d.hdel){const [w,i]=d.hdel.split('|');setHorario(H=>{H[w].splice(+i,1)});return}
+  if(d.hcopy){setHorario(H=>{H[d.hcopy]=JSON.parse(JSON.stringify(H[d.hcopy-1]||[]))});toast('Horario copiado');return}
   if(d.tri!==undefined&&t.closest('#triSeg')&&t.tagName==='BUTTON'){UI.tri=+d.tri;render();return}
   if(d.go){UI.tab=d.go;render();return}
   if(d.crit){UI.crit=d.crit;render();return}
@@ -404,13 +595,17 @@ document.addEventListener('click',e=>{
   switch(d.act){
     case 'rub':UI.rub=!UI.rub;render();break;
     case 'area':areaModal();break;
+    case 'soloUd':UI.soloUd=!UI.soloUd;render();break;
+    case 'nuevaUd':udModal();break;
+    case 'expDia':exportModal(false);break;
+    case 'expSem':exportModal(true);break;
     case 'prox':toast('Programación llegará en la próxima versión');break;
     case 'demo':demo();break;
     case 'informe':copiar(informeTexto(S.config.alumnos.find(a=>a.id===UI.alumno)));break;
     case 'copySen':copiar(senecaTSV('\t'));break;
     case 'csvSen':descargar(`seneca-mates-${UI.curso}-${['1T','2T','3T','curso'][UI.tri]}.csv`,'﻿'+senecaTSV(';'));break;
     case 'backup':descargar(`evaluapp-copia-${today()}.json`,JSON.stringify(S,null,1),'application/json');break;
-    case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegsRaw().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri});saveConfig();render();toast('Datos borrados')});break;
+    case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegsRaw().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});Object.keys(S.prog).forEach(id=>OPS.push({op:'del',id}));S.prog={};S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri,horario:S.config.horario});saveConfig();render();toast('Datos borrados')});break;
     case 'quitarDemo':quitarEjemplo();break;
     case 'syncSave':guardarSync();break;
     case 'syncOff':confirmar('¿Desconectar la hoja de Google? Los datos se quedarán en este dispositivo y en la hoja.','Desconectar',()=>{SYNC={url:'',key:''};try{localStorage.setItem(LS,'{}')}catch(e){}Sync.status();render()});break;
@@ -422,11 +617,15 @@ document.addEventListener('submit',e=>{
 });
 document.addEventListener('change',e=>{
   const t=e.target;
+  if(t.id==='pfecha'){UI.pfecha=t.value||today();render();return}
+  if(t.dataset.sf!==undefined){guardarSesion(t.dataset.sf,t.dataset.sk,t.value);toast('Guardado');return}
+  if(t.dataset.hw){const w=t.dataset.hw,i=+t.dataset.hi,k=t.dataset.hk,v=t.value;setHorario(H=>{H[w][i]=Object.assign({},H[w][i],{[k]:v});if(k==='fin'&&H[w][i+1]&&!H[w][i+1].ini)H[w][i+1].ini=v});return}
+  if(t.id==='avisoSust'){S.config.avisoSust=t.value;saveConfig();toast('Guardado');return}
   if(t.id==='fecha'){UI.fecha=t.value||today();render()}
   else if(t.id==='selAl'){UI.alumno=t.value;render()}
   else if(t.dataset.nota!==undefined){const v=Math.max(1,Math.min(10,+t.value||1));S.config.notas=S.config.notas.slice();S.config.notas[+t.dataset.nota]=v;saveConfig();render()}
   else if(t.dataset.tri&&t.type==='date'){const [i,j]=t.dataset.tri.split('|').map(Number);S.config.tri=S.config.tri.map(x=>x.slice());S.config.tri[i][j]=t.value;saveConfig();render()}
-  else if(t.id==='restore'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.config||!d.months)throw 0;confirmar('¿Sustituir los datos actuales por los de la copia?','Restaurar',()=>{allRegsRaw().forEach(r=>OPS.push({op:'del',id:r.id}));S.config=Object.assign(DEF_CONFIG(),d.config);S.months=d.months;allRegsRaw().forEach(r=>OPS.push({op:'up',r}));saveConfig();render();toast('Copia restaurada')})}catch(err){toast('Ese archivo no es una copia válida')}};fr.readAsText(t.files[0]);t.value=''}
+  else if(t.id==='restore'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{try{const d=JSON.parse(fr.result);if(!d.config||!d.months)throw 0;confirmar('¿Sustituir los datos actuales por los de la copia?','Restaurar',()=>{allRegsRaw().forEach(r=>OPS.push({op:'del',id:r.id}));Object.keys(S.prog).forEach(id=>OPS.push({op:'del',id}));S.config=Object.assign(DEF_CONFIG(),d.config);S.months=d.months;S.prog=d.prog||{};allRegsRaw().forEach(r=>OPS.push({op:'up',r}));Object.values(S.prog).forEach(p=>OPS.push({op:'up',r:toWire(p)}));saveConfig();render();toast('Copia restaurada')})}catch(err){toast('Ese archivo no es una copia válida')}};fr.readAsText(t.files[0]);t.value=''}
 });
 document.addEventListener('click',e=>{const b=e.target.closest('#alCur button');if(b){e.preventDefault()}},true);
 
@@ -442,4 +641,4 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   navigator.serviceWorker.register('sw.js').then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)}).catch(()=>{});
   let recargado=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(recargado)return;recargado=true;location.reload()});
 }
-loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
+loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();

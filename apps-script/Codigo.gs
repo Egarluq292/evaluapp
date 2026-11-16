@@ -1,5 +1,5 @@
 /**
- * Evalúapp · script de la hoja de Google · versión 1.1 (añade la columna «area»).
+ * Evalúapp · script de la hoja de Google · versión 1.2 (crea planes de clase en Google Docs).
  *
  * Cómo instalarlo (una sola vez):
  * 1. Crea una hoja de cálculo nueva en el Drive de tu cuenta de educaand.
@@ -57,6 +57,7 @@ function doPost(e) {
   try {
     if (body.action === 'ping') return salida_({ ok: true });
     if (body.action === 'pull') return salida_(Object.assign({ ok: true }, leerTodo_()));
+    if (body.action === 'doc') return salida_(Object.assign({ ok: true }, crearDoc_(body)));
     if (body.action === 'push') {
       aplicar_(body.ops || []);
       return salida_({ ok: true });
@@ -158,4 +159,30 @@ function escribirAlumnos_(alumnos) {
     h.getRange(2, 1, alumnos.length, 3).setNumberFormat('@')
       .setValues(alumnos.map(a => [a.id, a.nombre, a.curso]));
   }
+}
+
+/** Crea un documento de Google con el plan de clase y devuelve su enlace. */
+function crearDoc_(b) {
+  const doc = DocumentApp.create(String(b.titulo || 'Plan de clase · Evalúapp'));
+  const cuerpo = doc.getBody();
+  const H = DocumentApp.ParagraphHeading;
+  (b.bloques || []).forEach(x => {
+    const t = String(x.t || '');
+    if (x.k === 'h1') cuerpo.appendParagraph(t).setHeading(H.HEADING1);
+    else if (x.k === 'h2') cuerpo.appendParagraph(t).setHeading(H.HEADING2);
+    else if (x.k === 'h3') cuerpo.appendParagraph(t).setHeading(H.HEADING3);
+    else if (x.k === 'li') cuerpo.appendListItem(t).setGlyphType(DocumentApp.GlyphType.BULLET);
+    else cuerpo.appendParagraph(t);
+  });
+  const primero = cuerpo.getChild(0);
+  if (cuerpo.getNumChildren() > 1 && primero.getType() === DocumentApp.ElementType.PARAGRAPH && !primero.asParagraph().getText()) primero.removeFromParent();
+  doc.saveAndClose();
+  return { url: doc.getUrl() };
+}
+
+/** Ejecútala una vez desde el editor para dar permiso a crear documentos. Crea uno de prueba y lo manda a la papelera. */
+function autorizarDocumentos() {
+  const d = DocumentApp.create('Prueba Evalúapp');
+  DriveApp.getFileById(d.getId()).setTrashed(true);
+  Logger.log('Permisos concedidos. Ya puedes crear planes desde Evalúapp.');
 }
