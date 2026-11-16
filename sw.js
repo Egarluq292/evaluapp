@@ -1,5 +1,5 @@
 // Evalúapp · service worker. Al publicar cambios, sube el número de CACHE.
-const CACHE = 'evaluapp-7';
+const CACHE = 'evaluapp-8';
 const SHELL = ['./', 'index.html', 'styles.css', 'curriculo.js', 'app.js', 'manifest.webmanifest', 'icons/logo.png', 'icons/mark.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
