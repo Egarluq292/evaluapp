@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.3.0';
+const APP_VERSION='1.3.1';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -62,7 +62,7 @@ window.addEventListener('online',()=>Sync.schedule(200));window.addEventListener
 setInterval(()=>{if(document.visibilityState==='visible'&&!OPS.length)Sync.run()},90000);
 let SYNCST=['warn','Sin sincronizar'];
 function syncHTML(){return `<span class="dot ${SYNCST[0]}"></span><span>${esc(SYNCST[1])}</span>`}
-function setSync(k,t){SYNCST=[k,t];document.querySelectorAll('.sync').forEach(el=>el.innerHTML=syncHTML());if(UI.tab==='inicio'||UI.tab==='ajustes'){const v=document.getElementById('view');if(v&&!document.querySelector('.modal-bg'))render()}}
+function setSync(k,t){if(SYNCST[0]===k&&SYNCST[1]===t)return;SYNCST=[k,t];document.querySelectorAll('.sync').forEach(el=>el.innerHTML=syncHTML());if(UI.tab==='ajustes'&&k!=='warn'&&!document.querySelector('.modal-bg'))render()}
 
 /* ============ CÁLCULOS ============ */
 const allRegsRaw=()=>Object.values(S.months).flat();
@@ -558,20 +558,20 @@ const alumnosFiltro=()=>alumnosOrd().filter(a=>UI.filtro==='todos'||a.curso===UI
 function renderChrome(){
   const k=UI.tab,sec=SECS[k]||SECS.inicio;
   const root=document.documentElement.style;root.setProperty('--acc',`var(--a-${k})`);root.setProperty('--sec',`var(--s-${k})`);
-  document.getElementById('side').innerHTML=`<div class="brand"><div class="logo"><img src="icons/mark.png" alt=""></div><div class="wm">Evalú<span>app</span><small>Tu herramienta docente</small></div></div>
+  setHTML('side',`<div class="brand"><div class="logo"><img src="icons/mark.png" alt=""></div><div class="wm">Evalú<span>app</span><small>Tu herramienta docente</small></div></div>
    <button class="ctxrow side-ctx" data-act="ctx"><span>${esc(areaN(UI.area))} · ${triTxt(UI.tri)}</span>${ICONS.down}</button>
    ${NAV13.map(n=>`<button class="nav ${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}${n==='avisos'&&avisosN()?`<span class="nbadge">${avisosN()}</span>`:''}</button>`).join('')}
-   <div class="foot"><div class="sync">${syncHTML()}</div></div>`;
-  document.getElementById('top').innerHTML=k==='inicio'?'':`<div class="toprow"><div class="ttl2"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.back}</button><span class="ico2">${ICONS[k]}</span><span>${sec.n}</span></div><div class="sync deskonly">${syncHTML()}</div></div>`;
+   <div class="foot"><div class="sync">${syncHTML()}</div></div>`);
+  setHTML('top',k==='inicio'?'':`<div class="toprow"><div class="ttl2"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.back}</button><span class="ico2">${ICONS[k]}</span><span>${sec.n}</span></div><div class="sync deskonly">${syncHTML()}</div></div>`);
   document.getElementById('top').classList.toggle('empty',k==='inicio');
   const nb=(n,ic,lab)=>`<button class="${(k===n||(n==='diario'&&k==='prog'&&UI.ptab==='dia'))?'on':''}" data-tab="${n}">${ic}<span>${lab}</span>${n==='avisos'&&avisosN()?`<i class="nbadge">${avisosN()}</i>`:''}</button>`;
-  document.getElementById('tabs').innerHTML=`<div class="in5">${nb('inicio',ICONS.inicio,'Inicio')}${nb('diario',ICONS.cal,'Diario')}<button class="fab" data-act="quick" aria-label="Acciones rápidas">${ICONS.plus}</button>${nb('avisos',ICONS.bell,'Avisos')}${nb('ajustes',ICONS.alumno,'Perfil')}</div>`;
+  setHTML('tabs',`<div class="in5">${nb('inicio',ICONS.inicio,'Inicio')}${nb('diario',ICONS.cal,'Diario')}<button class="fab" data-act="quick" aria-label="Acciones rápidas">${ICONS.plus}</button>${nb('avisos',ICONS.bell,'Avisos')}${nb('ajustes',ICONS.alumno,'Perfil')}</div>`);
 }
 function vInicio(){
   const r=resumen();
   const live={evaluar:!r.als?'':r.sinEval?`${r.sinEval} sin evaluar`:'',clase:r.alertas?`${r.alertas} ${r.alertas===1?'alerta':'alertas'}`:'',alumno:r.als?`${r.als}`:'',seneca:r.pct?`${r.pct} %`:'',prog:(()=>{const u=udsDe(UI.area).length;return u?`${u} ${u===1?'unidad':'unidades'}`:''})(),ajustes:Sync.ok()&&OPS.length?`${OPS.length} pendientes`:''};
   return `<div class="hero3">
-    <div class="herotop"><button class="iconbtn ghost mobonly" data-act="drawer" aria-label="Menú">${ICONS.menu}</button><span class="deskonly"></span><button class="yrpill" data-act="ctx">${cursoEsc().replace('/',' / ')} ${ICONS.down}</button></div>
+    <div class="herotop"><button class="iconbtn ghost mobonly" data-act="drawer" aria-label="Menú">${ICONS.menu}</button></div>
     <img class="biglogo" src="icons/logo.png" alt="Evalúapp">
     <p class="tag">Tu herramienta docente</p>
     <div><button class="ctxchip" data-act="ctx"><span>${esc(areaN(UI.area))} · ${triTxt(UI.tri)}</span>${ICONS.down}</button></div>
@@ -704,9 +704,11 @@ function vProg13(){
 VIEWS.inicio=vInicio;VIEWS.evaluar=vEvaluar13;VIEWS.clase=vClase13;VIEWS.alumno=vAlumno13;VIEWS.seneca=vSeneca13;VIEWS.prog=vProg13;VIEWS.avisos=vAvisos;
 VIEWS.diario=()=>{UI.tab='prog';UI.ptab='dia';return vProg13()};
 
+const _last={};
+function setHTML(id,html){if(_last[id]===html)return false;const el=document.getElementById(id);if(!el)return false;el.innerHTML=html;_last[id]=html;return true}
 function render(){
   const act=document.activeElement;if(act&&(['alNom','syUrl','syKey'].includes(act.id)||(act.closest&&act.closest('#view')&&(act.tagName==='TEXTAREA'||(act.tagName==='INPUT'&&act.type==='text')))))return;
-  renderChrome();document.getElementById('view').innerHTML=VIEWS[UI.tab]();
+  renderChrome();setHTML('view',VIEWS[UI.tab]());
   document.body.dataset.tab=UI.tab;
 }
 function cellModal(a,c){
