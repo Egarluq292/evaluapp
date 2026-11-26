@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.7.0';
+const APP_VERSION='1.8.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -796,14 +796,17 @@ function autoNotas(curso){const regs=periodRegs(),N=nombresSen(),als=alumnosOrd(
   const cods=cols.map(k=>`${senPref(UI.area)}.${curso}.${k.o}`);const filas=[],sinNombre=[],sinNotas=[];
   als.forEach(al=>{const v=cols.map(k=>nota2(nivelMedio(regs,al.id,k.c)));if(v.every(x=>x===''))return sinNotas.push(al);const n=(N[al.id]||'').trim();if(!n)return sinNombre.push(al);filas.push([n,...v])});
   const usadas=cods.filter((c,j)=>filas.some(f=>f[j+1]!==''));const idx=cods.map((c,j)=>usadas.includes(c)?j:-1).filter(j=>j>=0);
-  return {txt:[['ALUMNO',...idx.map(j=>cods[j])].join('\t'),...filas.map(f=>[f[0],...idx.map(j=>f[j+1])].join('\t'))].join('\n'),n:filas.length,crs:idx.length,sinNombre,sinNotas,cods:idx.map(j=>cods[j])}}
+  const datos={};filas.forEach(f=>{const o={};idx.forEach(j=>{if(f[j+1]!=='')o[cods[j]]=f[j+1].replace(',','.')});datos[f[0]]=o});
+  return {datos,clave:`${senPref(UI.area)}.${curso}`,txt:[['ALUMNO',...idx.map(j=>cods[j])].join('\t'),...filas.map(f=>[f[0],...idx.map(j=>f[j+1])].join('\t'))].join('\n'),n:filas.length,crs:idx.length,sinNombre,sinNotas,cods:idx.map(j=>cods[j])}}
 function autoNotasModal(){const r=autoNotas(UI.curso);
   modal(`<h3>Copiar para AutoNotas</h3><p class="small muted" style="margin-top:-6px">${supO(esc(areaN(UI.area)))} · ${UI.curso}.º · ${TRI_N[UI.tri]}</p>
    ${r.n?`<div class="note">Se copian <b>${r.n}</b> ${r.n===1?'alumno':'alumnos'} y <b>${r.crs}</b> ${r.crs===1?'criterio':'criterios'} (${r.cods.map(esc).join(', ')}), con dos decimales.</div>`:''}
    ${r.sinNombre.length?`<div class="note warn" style="margin-top:10px"><b>${r.sinNombre.length} sin nombre de Séneca:</b> ${r.sinNombre.map(a=>esc(a.nombre)).join(', ')}. No se copian; añade su nombre en «Nombres como en Séneca».</div>`:''}
    ${!r.n?`<div class="card empty" style="margin-top:10px">No hay notas que copiar${r.sinNombre.length?' con nombre de Séneca':''}.</div>`:''}
    <ol class="small" style="margin:12px 0 0;padding-left:18px;line-height:1.5"><li>En Séneca, abre la actividad y el grupo de ${UI.curso}.º.</li><li>En AutoNotas pulsa «Importar», pega y «Aceptar».</li><li>Revisa con «Ver» que cada nota está en su sitio antes de «Aplicar notas».</li></ol>
-   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cerrar</button>${r.n?'<button class="btn pri" id="anOk">Copiar</button>':''}</div>`,(m,close)=>{const b=m.querySelector('#anOk');if(b)b.onclick=()=>{copiar(r.txt);close()}})}
+   <div class="btns" style="justify-content:flex-end;margin-top:14px;flex-wrap:wrap"><button class="btn" data-close>Cerrar</button>${r.n?`<button class="btn" id="anOk">Copiar para AutoNotas</button><button class="btn pri" id="anExt" ${Sync.ok()?'':'disabled'}>Enviar a la extensión</button>`:''}</div>
+   ${r.n&&!Sync.ok()?'<div class="small muted" style="margin-top:8px">«Enviar a la extensión» necesita la hoja de Google conectada.</div>':''}`,(m,close)=>{const b=m.querySelector('#anOk');if(b)b.onclick=()=>{copiar(r.txt);close()};
+    const e=m.querySelector('#anExt');if(e)e.onclick=()=>{S.config.senPend=Object.assign({},S.config.senPend,{[r.clave]:{area:areaN(UI.area),curso:UI.curso,tri:TRI_N[UI.tri],gen:new Date().toISOString(),datos:r.datos}});saveConfig();Sync.run&&Sync.run();close();toast(`Enviado: ${r.clave}. Abre la actividad en Séneca y pulsa «Evalúapp»`)}})}
 function nombresModal(){const N=nombresSen(),als=alumnosOrd().filter(a=>a.curso===UI.curso);
   modal(`<h3>Nombres como en Séneca · ${UI.curso}.º</h3><p class="small muted" style="margin-top:-6px">Escríbelos igual que en Séneca: «Apellidos, Nombre». Se guardan en tu hoja de Google y llegan a todos tus dispositivos.</p>
    <details style="margin-bottom:10px"><summary class="small" style="cursor:pointer;color:var(--teal)">Pegar la lista de Séneca para autocompletar</summary><textarea id="nmLista" placeholder="Un alumno por línea, copiado de Séneca" style="min-height:90px;margin-top:8px"></textarea></details>
