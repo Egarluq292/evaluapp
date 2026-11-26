@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.4.0';
+const APP_VERSION='1.4.1';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -279,7 +279,7 @@ function vAjustes(){
    ${S.config.tri.map(([a,b],i)=>`<div class="g2t"><b>${TRI_N[i]}</b><div class="field"><label>Inicio</label><input type="date" data-tri="${i}|0" value="${a}"></div><div class="field"><label>Fin</label><input type="date" data-tri="${i}|1" value="${b}"></div></div>`).join('')}
   </div>
   <div class="card stack" style="margin-top:12px"><h3>Sincronización con Google</h3>
-   ${Sync.ok()?`<div class="small">Conectado a tu hoja de Google. ${OPS.length?`<b>${OPS.length} cambios pendientes de subir.</b>`:'Todo está subido.'}</div>${Sync.lastError?`<div class="small" style="color:var(--l1)">Último error: ${esc(Sync.lastError)}</div>`:''}<div class="g2b"><button class="btn" data-act="syncNow">Sincronizar ahora</button><button class="btn danger" data-act="syncOff">Desconectar</button></div>`
+   ${Sync.ok()?`<div class="small">Conectado a tu hoja de Google. ${OPS.length?`<b>${OPS.length} cambios pendientes de subir.</b>`:'Todo está subido.'}</div>${Sync.lastError?`<div class="small" style="color:var(--l1)">Último error: ${esc(Sync.lastError)}</div>`:''}<button class="btn pri" data-act="syncLink" style="width:100%">Conectar otro dispositivo</button><div class="small muted">Te crea un enlace con la conexión. Envíatelo a ti mismo y ábrelo en el otro dispositivo. No se lo pases a nadie: lleva tu clave.</div><div class="g2b"><button class="btn" data-act="syncNow">Sincronizar ahora</button><button class="btn danger" data-act="syncOff">Desconectar</button></div>`
    :`<div class="small muted">Pega la URL de la aplicación web y la clave que te dio el script de tu hoja (cuenta de educaand). Así verás los mismos datos en el móvil y en el PC.</div>
    <div class="field"><label>URL de la aplicación web</label><input type="text" id="syUrl" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></div>
    <div class="field"><label>Clave</label><input type="text" id="syKey" placeholder="Clave del script" autocomplete="off"></div>
@@ -855,6 +855,9 @@ document.addEventListener('click',e=>{
     case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegsRaw().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});Object.keys(S.prog).forEach(id=>OPS.push({op:'del',id}));S.prog={};S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri,horario:S.config.horario});saveConfig();render();toast('Datos borrados')});break;
     case 'quitarDemo':quitarEjemplo();break;
     case 'syncSave':guardarSync();break;
+    case 'syncLink':{const l=location.origin+location.pathname+'#conectar='+btoa(JSON.stringify(SYNC));
+      if(navigator.share)navigator.share({title:'Conectar Evalúapp',text:'Abre este enlace en el otro dispositivo para conectarlo a tu hoja:',url:l}).catch(()=>{});
+      else navigator.clipboard.writeText(l).then(()=>toast('Enlace copiado. Envíatelo y ábrelo en el otro dispositivo'),()=>prompt('Copia este enlace:',l));break}
     case 'syncOff':confirmar('¿Desconectar la hoja de Google? Los datos se quedarán en este dispositivo y en la hoja.','Desconectar',()=>{SYNC={url:'',key:''};try{localStorage.setItem(LS,'{}')}catch(e){}Sync.status();render()});break;
     case 'syncNow':Sync.run();break;
   }
@@ -877,6 +880,11 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('click',e=>{const b=e.target.closest('#alCur button');if(b){e.preventDefault()}},true);
 
+async function conectarDesdeEnlace(){const m=location.hash.match(/^#conectar=(.+)$/);if(!m)return;history.replaceState(null,'',location.pathname);
+  let c;try{c=JSON.parse(atob(decodeURIComponent(m[1])))}catch(e){toast('El enlace de conexión está incompleto');return}
+  if(!c.url||!c.key)return;toast('Conectando con tu hoja…');
+  try{await Sync.call({action:'ping'},c.url,c.key);SYNC={url:c.url,key:c.key};localStorage.setItem(LS,JSON.stringify(SYNC));toast('Conectado con la hoja');render();Sync.run()}catch(e){toast(e.message||'No se pudo conectar')}}
+setTimeout(conectarDesdeEnlace,300);
 async function guardarSync(){
   const url=document.getElementById('syUrl').value.trim(),key=document.getElementById('syKey').value.trim();
   if(!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)){toast('La URL debe empezar por https://script.google.com y acabar en /exec');return}
@@ -886,7 +894,7 @@ async function guardarSync(){
   catch(e){toast(e.message||'No se pudo conectar');b.disabled=false;b.textContent='Conectar'}
 }
 if('serviceWorker' in navigator&&location.protocol==='https:'){
-  navigator.serviceWorker.register('sw.js').then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000)}).catch(()=>{});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),30*60*1000);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')reg.update()})}).catch(()=>{});
   let recargado=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(recargado)return;recargado=true;location.reload()});
 }
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
