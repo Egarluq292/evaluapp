@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.4.1';
+const APP_VERSION='1.5.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -409,22 +409,58 @@ function franjaTit(fr){const base=CURRICULO[fr.ar]?areaN(fr.ar):(fr.lab||'Otra a
 const supO=t=>String(t).replace(/(\d)\.(er|os|as|o|a)\b/g,'$1.<sup>$2</sup>');
 const refMark=fr=>fr.ref?' <span class="refm" title="Recibo refuerzo">®</span>':'';
 function vHorario(){
-  const H=S.config.horario||{};
-  const opts=sel=>Object.entries(CURRICULO).map(([id,a])=>`<option value="${id}" ${sel===id?'selected':''}>${esc(a.corto)}</option>`).join('')+`<option value="otro" ${sel==='otro'?'selected':''}>Otra (lectura, recreo, inglés…)</option>`;
-  const at=(w,i,k)=>`data-hw="${w}" data-hi="${i}" data-hk="${k}"`;
-  return `<div class="note" style="margin-bottom:12px">Tu horario semanal. El planificador lo usa para preparar cada día y el plan para quien te sustituya.</div>`+[1,2,3,4,5].map(w=>`<div class="card" style="margin-bottom:12px"><h3>${may1(DIAS[w])}</h3>${(H[w]||[]).map((fr,i)=>`<div class="fcard" style="--fc:${arCol(fr.ar)}">
-     <div class="frow"><input type="time" ${at(w,i,'ini')} value="${fr.ini||''}"><input type="time" ${at(w,i,'fin')} value="${fr.fin||''}"><select ${at(w,i,'ar')}>${opts(fr.ar)}</select><button class="ic" data-hdel="${w}|${i}" aria-label="Quitar">✕</button></div>
-     ${CURRICULO[fr.ar]?`<div class="frow2"><select ${at(w,i,'grupo')}><option value="tut" ${(fr.grupo||'tut')==='tut'?'selected':''}>Mi grupo: 3.º y 4.º</option><option value="otro" ${fr.grupo==='otro'?'selected':''}>Otro grupo</option></select>${fr.grupo==='otro'?`<input type="text" ${at(w,i,'glab')} value="${esc(fr.glab||'')}" placeholder="Qué grupo (p. ej. 3.er ciclo)">`:`<input type="text" ${at(w,i,'lab')} value="${esc(fr.lab||'')}" placeholder="Detalle opcional (p. ej. robótica)">`}</div>`
-      :`<div class="frow2"><input type="text" ${at(w,i,'lab')} value="${esc(fr.lab||'')}" placeholder="Qué es (lectura, religión, inglés/biblioteca…)" style="grid-column:1/-1"></div>`}
-     <div class="frow2"><label class="chk"><input type="checkbox" ${at(w,i,'ref')} ${fr.ref?'checked':''}> Recibo refuerzo ®</label><input type="text" ${at(w,i,'fijo')} value="${esc(fr.fijo||'')}" placeholder="Texto fijo de cada semana (opcional)"></div>
-   </div>`).join('')||'<div class="muted small" style="margin-bottom:8px">Sin franjas.</div>'}<div class="g2b" style="margin-top:8px"><button class="btn sm" data-hadd="${w}">+ Añadir franja</button>${w>1?`<button class="btn sm" data-hcopy="${w}">Copiar del ${DIAS[w-1]}</button>`:'<span></span>'}</div></div>`).join('')+
-  `<div class="card stack" style="margin-bottom:12px"><h3>Cabecera del plan</h3><div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'heroes')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
+  const T=franjasT(),H=S.config.horario||{};
+  const celda=(w,fr)=>{if(!fr)return `<span class="hvac">+</span>`;const otro=!CURRICULO[fr.ar];
+    const tx=otro?(fr.lab||'Otra'):AB_AREA[fr.ar];const lw=Math.max(...tx.split(/[\s/]+/).map(x=>x.length));return `<span class="hn ${lw>8?'lg':''}">${esc(tx)}${fr.ref?' ®':''}</span>${!otro&&fr.lab?`<span class="hs">${esc(fr.lab)}</span>`:''}${!otro&&fr.grupo==='otro'?`<span class="hs">${supO(esc(fr.glab||'Otro grupo'))}</span>`:''}`};
+  const grid=T.length?`<div class="hgrid"><table><thead><tr><th></th>${[1,2,3,4,5].map(w=>`<th><button data-hdia="${w}">${DIAS[w].slice(0,3)}<span>Copiar</span></button></th>`).join('')}</tr></thead><tbody>${T.map(t=>`<tr><td class="hcol"><button data-hslot="${t.ini}">${esc(t.ini)}<span>${esc(t.fin)}</span></button></td>${[1,2,3,4,5].map(w=>{const fr=(H[w]||[]).find(x=>x.ini===t.ini);return `<td><button class="hcell ${fr?'':'vac'}" data-hcel="${w}|${t.ini}" style="--fc:${fr?arCol(fr.ar):'transparent'}">${celda(w,fr)}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`:'';
+  return `<div class="note" style="margin-bottom:12px">1. Crea las franjas horarias: valen para toda la semana. 2. Toca cada casilla para elegir qué das; al guardar puedes aplicarlo a varios días a la vez. 3. Toca un día para copiarlo en otros.</div>
+   <div class="card" style="margin-bottom:12px"><div class="hhead"><h3>Tu horario</h3><button class="btn sm" data-act="hAddSlot">+ Franja</button></div>${grid||`<div class="empty" style="padding:14px 0"><b>Aún no hay franjas</b><div style="margin-top:10px"><button class="btn pri" data-act="hPlantilla">Crear 09:00 – 14:00 con recreo</button></div></div>`}</div>`+
+  `<div class="card stack" style="margin-bottom:12px"><h3>Cabecera del plan</h3><div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'acuarela')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
      <button class="cabopt ${S.config.cabecera==='propia'?'on':''}" data-cab="propia">${cabPropia()?`<div class="cabimg" style="background-image:url(${cabPropia()})"></div>`:'<div class="cabimg vacia">Sube una imagen</div>'}<span>Mi imagen</span></button>
      <button class="cabopt ${S.config.cabecera==='ninguna'?'on':''}" data-cab="ninguna"><div class="cabimg vacia">Sin imagen</div><span>Sin cabecera</span></button></div>
      <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda solo en este dispositivo. Usa imágenes propias o libres de derechos.</div></div>`+
   `<div class="card stack"><h3>Indicaciones generales para sustitutos</h3><textarea id="avisoSust" placeholder="Rutinas del aula, dónde están los materiales, normas, a quién acudir…">${esc(S.config.avisoSust||'')}</textarea><div class="small muted">Saldrá al principio de cada plan exportado. No pongas aquí datos personales ni de salud del alumnado.</div></div>`;
 }
-function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);fn(H);S.config.horario=H;saveConfig();render()}
+const AB_AREA={mat:'Mates',len:'Lengua',cmn:'C. Medio',pla:'Plástica'};
+const hm=t=>{const [h,m]=(t||'0:0').split(':').map(Number);return h*60+m},mh=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+function franjasT(){if(S.config.franjas&&S.config.franjas.length)return S.config.franjas;const m={};Object.values(S.config.horario||{}).forEach(l=>(l||[]).forEach(fr=>{if(fr.ini&&!m[fr.ini])m[fr.ini]={ini:fr.ini,fin:fr.fin||''}}));return Object.values(m).sort((a,b)=>hm(a.ini)-hm(b.ini))}
+function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);const T=JSON.parse(JSON.stringify(franjasT()));fn(H,T);T.sort((a,b)=>hm(a.ini)-hm(b.ini));[1,2,3,4,5].forEach(w=>{H[w]=H[w].filter(fr=>T.some(t=>t.ini===fr.ini)).map(fr=>Object.assign(fr,{fin:T.find(t=>t.ini===fr.ini).fin})).sort((a,b)=>hm(a.ini)-hm(b.ini))});S.config.horario=H;S.config.franjas=T;saveConfig();render()}
+const DCHK=(sel,fijo)=>`<div class="dchk">${[1,2,3,4,5].map(w=>`<button class="tchip ${sel.includes(w)?'on':''}" data-w="${w}" ${w===fijo?'disabled':''}>${DIAS[w].slice(0,3)}</button>`).join('')}<button class="tchip" data-w="todos">Toda la semana</button></div>`;
+function dchkMount(m){m.querySelector('.dchk').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.w==='todos'){m.querySelectorAll('.dchk [data-w]:not([data-w="todos"])').forEach(x=>x.classList.add('on'));return}b.classList.toggle('on')});return ()=>[...m.querySelectorAll('.dchk .on[data-w]')].map(b=>+b.dataset.w).filter(Boolean)}
+function celdaModal(w,ini){
+  const T=franjasT(),t=T.find(x=>x.ini===ini),fr0=((S.config.horario||{})[w]||[]).find(x=>x.ini===ini);let fr=Object.assign({ar:'',grupo:'tut',glab:'',lab:'',ref:false,fijo:''},fr0||{});
+  const opts=['',...Object.keys(CURRICULO),'otro'].map(id=>`<option value="${id}" ${fr.ar===id?'selected':''}>${id===''?'— Libre —':id==='otro'?'Otra (lectura, recreo, inglés…)':esc(CURRICULO[id].corto)}</option>`).join('');
+  const det=()=>!fr.ar?'':CURRICULO[fr.ar]?`<div class="field"><label>Grupo</label><div class="seg" id="cGr"><button data-v="tut" class="${fr.grupo!=='otro'?'on':''}">Mi grupo: 3.º y 4.º</button><button data-v="otro" class="${fr.grupo==='otro'?'on':''}">Otro grupo</button></div></div>${fr.grupo==='otro'?`<div class="field"><label>Qué grupo</label><input type="text" id="cGl" value="${esc(fr.glab)}" placeholder="P. ej. 3.er ciclo"></div>`:''}<div class="field"><label>Detalle (opcional)</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="P. ej. robótica"></div>`
+    :`<div class="field"><label>Qué es</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="Lectura, religión, inglés/biblioteca…"></div>`;
+  const resto=()=>!fr.ar?'':`<label class="chk"><input type="checkbox" id="cRef" ${fr.ref?'checked':''}> Recibo refuerzo ®</label><div class="field"><label>Texto fijo de cada semana (opcional)</label><input type="text" id="cFijo" value="${esc(fr.fijo)}" placeholder="P. ej. revisar tareas pendientes"></div>`;
+  modal(`<h3 style="margin-bottom:2px">${may1(DIAS[w])} · ${esc(t.ini)}–${esc(t.fin)}</h3><p class="small muted" style="margin:0 0 10px">Qué das en esta franja</p>
+   <div class="field"><label>Área o actividad</label><select id="cAr">${opts}</select></div><div id="cDet">${det()}</div><div id="cRes" class="stack">${resto()}</div>
+   <div class="field"><label>Aplicar también a</label>${DCHK([w],w)}</div>
+   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="cOk">Guardar</button></div>`,(m,close)=>{
+    const dias=dchkMount(m);
+    const leer=()=>{fr.ar=m.querySelector('#cAr').value;const g=m.querySelector('#cGr .on');if(g)fr.grupo=g.dataset.v;['cGl:glab','cLab:lab','cFijo:fijo'].forEach(x=>{const [id,k]=x.split(':');const el=m.querySelector('#'+id);if(el)fr[k]=el.value.trim()});const r=m.querySelector('#cRef');if(r)fr.ref=r.checked};
+    const pintar=()=>{m.querySelector('#cDet').innerHTML=det();m.querySelector('#cRes').innerHTML=resto()};
+    m.querySelector('#cAr').onchange=()=>{leer();pintar()};
+    m.querySelector('#cDet').addEventListener('click',e=>{const b=e.target.closest('#cGr button');if(!b)return;leer();fr.grupo=b.dataset.v;pintar()});
+    m.querySelector('#cOk').onclick=()=>{leer();const ds=[...new Set([w,...dias()])];
+      setHorario(H=>ds.forEach(d=>{H[d]=H[d].filter(x=>x.ini!==ini);if(fr.ar){const n={ini,fin:t.fin,ar:fr.ar};if(CURRICULO[fr.ar]){if(fr.grupo==='otro'){n.grupo='otro';n.glab=fr.glab}}if(fr.lab)n.lab=fr.lab;if(fr.ref)n.ref=true;if(fr.fijo)n.fijo=fr.fijo;H[d].push(n)}}));
+      close();toast(ds.length>1?`Guardado en ${ds.length} días`:'Guardado')};
+  });
+}
+function slotModal(ini){
+  const T=franjasT(),t=ini?T.find(x=>x.ini===ini):{ini:T.length?T[T.length-1].fin:'09:00',fin:''};if(!ini&&!t.fin)t.fin=mh(hm(t.ini)+60);
+  modal(`<h3>${ini?'Franja horaria':'Nueva franja'}</h3><p class="small muted" style="margin-top:-6px">Vale para los cinco días.</p><div class="g2b"><div class="field"><label>Empieza</label><input type="time" id="sIni" value="${t.ini}"></div><div class="field"><label>Acaba</label><input type="time" id="sFin" value="${t.fin}"></div></div>
+   <div class="btns" style="justify-content:space-between;margin-top:14px">${ini?'<button class="btn danger" id="sDel">Quitar franja</button>':'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="sOk">Guardar</button></span></div>`,(m,close)=>{
+    m.querySelector('#sOk').onclick=()=>{const ni=m.querySelector('#sIni').value,nf=m.querySelector('#sFin').value;if(!ni||!nf||hm(nf)<=hm(ni)){toast('Revisa las horas');return}
+      if(T.some(x=>x.ini===ni&&x.ini!==ini)){toast('Ya hay una franja que empieza a esa hora');return}
+      setHorario((H,T2)=>{if(ini){const x=T2.find(y=>y.ini===ini);x.ini=ni;x.fin=nf;[1,2,3,4,5].forEach(w=>H[w].forEach(fr=>{if(fr.ini===ini)fr.ini=ni}))}else T2.push({ini:ni,fin:nf})});
+      if(ini&&ini!==ni)moverSesiones(ini,ni);close();toast('Guardado')};
+    const del=m.querySelector('#sDel');if(del)del.onclick=()=>{close();confirmar(`¿Quitar la franja de las ${ini} de todos los días? Lo ya planificado en ella deja de verse.`,'Quitar',()=>setHorario((H,T2)=>{T2.splice(T2.findIndex(y=>y.ini===ini),1)}))};
+  });
+}
+function moverSesiones(a,b){const hb='-h'+b.replace(':','');Object.values(S.prog).forEach(p=>{if(p.t==='ses'&&p.d&&p.d.ini===a){const n=JSON.parse(JSON.stringify(p));n.id=`ses-${p.f}${hb}`;n.d.ini=b;saveProg(n);delProg(p.id)}})}
+function copiarDiaHor(w){modal(`<h3>Copiar el horario del ${DIAS[w]}</h3><p class="small muted" style="margin-top:-6px">Sustituye el horario de los días que marques.</p>${DCHK([],w)}<div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="dOk">Copiar</button></div>`,(m,close)=>{const dias=dchkMount(m);m.querySelector('#dOk').onclick=()=>{const ds=dias().filter(d=>d!==w);if(!ds.length){toast('Marca algún día');return}setHorario(H=>ds.forEach(d=>H[d]=JSON.parse(JSON.stringify(H[w]))));close();toast(`Copiado en ${ds.length} ${ds.length===1?'día':'días'}`)}})}
+function plantillaHorario(){setHorario((H,T)=>{T.splice(0,T.length,{ini:'09:00',fin:'09:30'},{ini:'09:30',fin:'10:30'},{ini:'10:30',fin:'11:30'},{ini:'11:30',fin:'12:00'},{ini:'12:00',fin:'13:00'},{ini:'13:00',fin:'14:00'});[1,2,3,4,5].forEach(w=>H[w]=[{ini:'11:30',fin:'12:00',ar:'otro',lab:'Recreo'}])})}
 /* ---- cabecera ---- */
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
 function cabeceraHTML(f){const k=S.config.cabecera||'heroes',t=may1(fLarga(f));
@@ -441,8 +477,11 @@ function sesDatos(p,fr){const d=p?JSON.parse(JSON.stringify(p.d)):{};
   if(!d.c3&&(d.ud||d.act||d.mat))d.c3={ud:d.ud||'',act:d.act||'',mat:d.mat||''};
   d.c3=Object.assign(BLK0(),d.c3||{});d.c4=Object.assign(BLK0(),d.c4||{});return d}
 const bloquesDe=(fr,d)=>!esTut(fr)?[['g','']]:d.junto?[['c3','3.º y 4.º']]:[['c3','3.º'],['c4','4.º']];
-function getSes(f,i){const fr=franjasDe(f)[i];return {fr,d:sesDatos(S.prog[sesId(f,i)],fr)}}
-function putSes(f,i,d){const fr=franjasDe(f)[i];const id=sesId(f,i);const p={id,t:'ses',ar:CURRICULO[fr.ar]?fr.ar:'otro',f,d:Object.assign({},d,{ini:fr.ini,fin:fr.fin,far:fr.ar,lab:fr.lab||'',grupo:fr.grupo||'tut'})};delete p.d.ud;delete p.d.act;delete p.d.mat;saveProg(p)}
+const sesKey=(f,fr)=>`ses-${f}-h${(fr.ini||'').replace(':','')}`;
+function sesLegacy(f,fr){for(let k=0;k<12;k++){const p=S.prog[sesId(f,k)];if(p&&p.d&&p.d.ini===fr.ini)return p}return null}
+const sesP=(f,fr,i)=>{const p=S.prog[sesKey(f,fr)]||sesLegacy(f,fr);if(p)return p;const o=S.prog[sesId(f,i)];return o&&o.d&&!o.d.ini&&!o.d.notas?o:null};
+function getSes(f,i){const fr=franjasDe(f)[i];return {fr,d:sesDatos(sesP(f,fr,i),fr)}}
+function putSes(f,i,d){const fr=franjasDe(f)[i];const id=sesKey(f,fr);const lg=sesLegacy(f,fr)||((o=>o&&o.d&&!o.d.ini&&!o.d.notas?o:null)(S.prog[sesId(f,i)]));if(lg&&lg.id!==id)delProg(lg.id);const p={id,t:'ses',ar:CURRICULO[fr.ar]?fr.ar:'otro',f,d:Object.assign({},d,{ini:fr.ini,fin:fr.fin,far:fr.ar,lab:fr.lab||'',grupo:fr.grupo||'tut'})};delete p.d.ud;delete p.d.act;delete p.d.mat;saveProg(p)}
 const vacioB=y=>!y||(!y.act&&!y.ud&&!y.mat);
 const sesVacia=(f,i)=>{const {fr,d}=getSes(f,i);return bloquesDe(fr,d).every(([k])=>vacioB(d[k]))};
 function sesionN(f,i,udId){if(!udId)return null;const l=[];Object.values(S.prog).forEach(p=>{if(p.t!=='ses')return;const d=p.d||{};if([d.c3,d.c4,d.g].some(y=>y&&y.ud===udId)||d.ud===udId)l.push(p.f+'|'+String(d.ini||'').padStart(5,'0'))});l.sort();const me=f+'|'+String((franjasDe(f)[i]||{}).ini||'').padStart(5,'0');const n=l.indexOf(me)+1;const u=S.prog[udId];return n?{n,tot:u?(+u.d.ses||0):0,cod:u?codUd(u):'',tit:u?u.d.titulo:''}:null}
@@ -816,6 +855,9 @@ document.addEventListener('click',e=>{
   if(d.cab){if(d.cab==='propia'&&!cabPropia()){document.getElementById('cabFile').click();return}S.config.cabecera=d.cab;saveConfig();render();return}
   if(d.ud){udModal(d.ud);return}
   if(d.pday){UI.pfecha=addDias(UI.pfecha,+d.pday);render();return}
+  if(d.hcel){const [w,ini]=d.hcel.split('|');celdaModal(+w,ini);return}
+  if(d.hslot){slotModal(d.hslot);return}
+  if(d.hdia){copiarDiaHor(+d.hdia);return}
   if(d.hadd){setHorario(H=>{const l=H[d.hadd];const last=l[l.length-1];l.push({ini:last?last.fin:'09:00',fin:'',ar:UI.area})});return}
   if(d.hdel){const [w,i]=d.hdel.split('|');setHorario(H=>{H[w].splice(+i,1)});return}
   if(d.hcopy){setHorario(H=>{H[d.hcopy]=JSON.parse(JSON.stringify(H[d.hcopy-1]||[]))});toast('Horario copiado');return}
@@ -844,6 +886,8 @@ document.addEventListener('click',e=>{
     case 'nuevaUd':udModal();break;
     case 'expDia':exportModal(false);break;
     case 'expSem':exportModal(true);break;
+    case 'hAddSlot':slotModal('');break;
+    case 'hPlantilla':plantillaHorario();break;
     case 'copSem':copSemana();break;
     case 'copDia':copDiaModal();break;
     case 'prox':toast('Programación llegará en la próxima versión');break;

@@ -526,3 +526,21 @@ nav.tabs{background:#121c2c}
 @media print{:root,html{color-scheme:light!important}html,body,body.printing{background:#fff!important}@page{size:A4;margin:12mm}}
 .erow select{flex:1 1 100%}
 .eref.on{background:var(--l2);border-color:var(--l2);color:#3b2a06;font-weight:800}
+/* ===== v1.5 · horario en cuadrícula ===== */
+.hhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.hhead h3{margin:0}
+.hgrid{overflow-x:auto;margin:0 -6px}
+.hgrid table{border-collapse:separate;border-spacing:4px;width:100%;table-layout:fixed;min-width:330px}
+.hgrid th:first-child,.hgrid td.hcol{width:48px}
+.hgrid th button{width:100%;border:0;background:none;color:var(--ink);font:700 13px Inter,sans-serif;padding:4px 0;display:flex;flex-direction:column;align-items:center}
+.hgrid th button span{font-size:10px;font-weight:600;color:var(--teal)}
+.hgrid td.hcol button{width:100%;border:0;background:var(--bg2);border-radius:8px;color:var(--ink);font:700 12px Inter,sans-serif;padding:6px 2px;display:flex;flex-direction:column;align-items:center}
+.hgrid td.hcol button span{font-weight:500;color:var(--muted);font-size:11px}
+.hcell{width:100%;min-height:48px;border:0;border-left:3px solid var(--fc);background:var(--bg2);border-radius:8px;color:var(--ink);padding:5px 4px;display:flex;flex-direction:column;justify-content:center;gap:2px;text-align:left;overflow-wrap:anywhere;hyphens:auto}
+.hcell.vac{border:1px dashed var(--line2);background:none;align-items:center}
+.hn{font-weight:700;font-size:11.5px;line-height:1.2;color:var(--fc)}.hs{font-size:10px;color:var(--muted);line-height:1.15}
+.hvac{color:var(--dim);font-size:16px}
+@media(min-width:700px){.hn{font-size:13px}.hs{font-size:11.5px}.hcell{min-height:56px;padding:8px}}
+.dchk{display:flex;flex-wrap:wrap;gap:6px}.dchk .tchip.on{background:var(--teal);color:#0e1623;border-color:var(--teal)}.dchk .tchip:disabled{opacity:1;background:var(--teal);color:#0e1623;border-color:var(--teal)}
+.hcell{hyphens:manual;overflow-wrap:break-word;word-break:normal}
+@media(max-width:699px){.hgrid table{border-spacing:3px}.hgrid th:first-child,.hgrid td.hcol{width:42px}.hn{font-size:10.5px;letter-spacing:-.1px}.hs{font-size:9.5px}.hcell{padding:5px 3px}}
+@media(max-width:699px){.hn.lg{font-size:9px;letter-spacing:-.2px}}
