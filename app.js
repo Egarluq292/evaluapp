@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.5.1';
+const APP_VERSION='1.5.2';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -479,9 +479,9 @@ function plantillaHorario(){setHorario((H,T)=>{T.splice(0,T.length,{ini:'09:00',
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
 function cabeceraHTML(f){const k=S.config.cabecera||'acuarela',t=may1(fLarga(f));
   if(k==='ninguna')return `<div class="cabtxt">${esc(t)}</div>`;
-  if(k==='propia'&&cabPropia())return `<div class="cab"><div class="cabimg big" style="background-image:url(${cabPropia()})"><span>${esc(t)}</span></div></div>`;
+  if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt=""><span>${esc(t)}</span></div>`;
   return `<div class="cab">${(CABECERAS[k]||CABECERAS.acuarela).svg(esc(t))}</div>`}
-function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=1200;c.height=300;const x=c.getContext('2d');const r=Math.max(1200/img.width,300/img.height);const w=img.width*r,h=img.height*r;x.drawImage(img,(1200-w)/2,(300-h)/2,w,h);try{localStorage.setItem('evaluapp-cab',c.toDataURL('image/jpeg',.82));S.config.cabecera='propia';saveConfig();render();toast('Cabecera guardada')}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
+function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const r=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1400000&&q>.4){q-=.1;d=c.toDataURL('image/jpeg',q)}try{localStorage.setItem('evaluapp-cab',d);S.config.cabecera='propia';saveConfig();render();toast('Cabecera guardada')}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
 /* ---- sesiones ---- */
 const sesId=(f,i)=>`ses-${f}-${i}`;
 const BLK0=()=>({ud:'',act:'',mat:'',est:'',ref:false,mov:''});

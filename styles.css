@@ -551,3 +551,14 @@ nav.tabs{background:#121c2c}
 .dmis{font-size:12.5px;color:#7a7f88;text-align:right;margin-top:2px}
 @media print{#print .pmis{font-size:9.5pt;color:#555;text-align:right}}
 @media(max-width:699px){.hn{font-size:10px}.hs{font-size:9px;line-height:1.15}.hs.lg{font-size:8px;letter-spacing:-.2px}}
+/* v1.5.2: cabecera propia entera y difuminada, como en su documento */
+.cabp{position:relative;line-height:0;overflow:hidden}
+.cabp img{display:block;width:100%;height:auto}
+.cabp::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(251,250,246,.45),rgba(251,250,246,.62) 55%,rgba(251,250,246,.92))}
+.cabp span{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:0 4%;line-height:1;font-family:'Amatic SC',cursive;font-weight:700;font-size:clamp(30px,7.5vw,64px);color:#2c5866;text-shadow:0 0 6px #fbfaf6,0 0 14px #fbfaf6}
+@media print{
+  #print .cabp{-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0 0 2mm}
+  #print .cabp::after{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  #print .cabp span{font-size:34pt}
+}
+.cabp img{aspect-ratio:3.8/1;object-fit:cover;object-position:50% 25%}
