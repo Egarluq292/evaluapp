@@ -8,7 +8,7 @@ const LVC=['var(--l0)','var(--l1)','var(--l2)','var(--l3)','var(--l4)'];
 const TRI_N=['1.<sup>er</sup> trim.','2.º trim.','3.<sup>er</sup> trim.','Curso'];
 
 /* ============ ESTADO ============ */
-const DEF_CONFIG=()=>({alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']],horario:{1:[],2:[],3:[],4:[],5:[]},udActual:{},avisoSust:''});
+const DEF_CONFIG=()=>({cabecera:'acuarela',alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']],horario:{1:[],2:[],3:[],4:[],5:[]},udActual:{},avisoSust:''});
 let S={config:DEF_CONFIG(),months:{},prog:{}};
 const PROGT=['ud','ses'];
 const toWire=p=>({id:p.id,t:p.t,ar:p.ar,f:p.f||'',a:'',c:'',txt:JSON.stringify(p.d||{})});
@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.3.3';
+const APP_VERSION='1.4.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -35,7 +35,8 @@ const Sync={timer:null,busy:false,
  status(){if(!this.ok())setSync('warn','Sin sincronizar');else if(!navigator.onLine)setSync('warn',OPS.length?`Sin conexión · ${OPS.length} pendientes`:'Sin conexión');},
  schedule(ms=1200){if(!this.ok()){this.status();return}clearTimeout(this.timer);this.timer=setTimeout(()=>this.run(),ms)},
  async call(body,url=SYNC.url,key=SYNC.key){
-   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key},body))});
+   let r;try{r=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(Object.assign({key},body))})}
+   catch(e){throw new Error(navigator.onLine?'Google no ha dejado leer la respuesta del script. Lo habitual es que falten permisos: abre el script, ejecuta «autorizarDocumentos» y vuelve a implementar como «Nueva versión». Si estás en la wifi del colegio, prueba también con datos móviles.':'Sin conexión a internet.')}
    let j;try{j=await r.json()}catch(e){throw new Error('La hoja no responde bien. Revisa la URL y que la implementación sea «Cualquier usuario».')}
    if(!j.ok)throw new Error(j.error||'Error desconocido');return j},
  async run(){
@@ -331,7 +332,7 @@ UI.ptab='uds';UI.pfecha=today();UI.soloUd=true;UI.pcurso='todos';
 function cursoSeg(){return `<div class="seg" style="margin-bottom:12px">${[['todos','Ambos cursos'],['3','3.º'],['4','4.º']].map(([k,n])=>`<button data-pcurso="${k}" class="${UI.pcurso===k?'on':''}">${n}</button>`).join('')}</div>`}
 function vProg(){
   const tabs=[['uds','Unidades'],['tri','Trimestres'],['dia','Diario'],['hor','Horario']];
-  const body={uds:vUds,tri:vTris,dia:vDiario,hor:vHorario}[UI.ptab]();
+  const body={uds:vUds,tri:vTris,sem:vSemana,dia:vDia,hor:vHorario}[UI.ptab]();
   return `<h2>Programación</h2><div class="seg" style="margin-bottom:12px">${tabs.map(([k,n])=>`<button data-ptab="${k}" class="${UI.ptab===k?'on':''}">${n}</button>`).join('')}</div>${['uds','tri'].includes(UI.ptab)?cursoSeg():''}${body}`;
 }
 function udCard(u){
@@ -399,88 +400,135 @@ function udModal(id){
   });
 }
 /* ---- horario ---- */
+/* ---- horario ---- */
+const AREA_COL={mat:'#e0913a',len:'#4f8fe0',cmn:'#58a85c',pla:'#b968a6',otro:'#b07a52'};
+const arCol=ar=>AREA_COL[CURRICULO[ar]?ar:'otro'];
 function franjasDe(f){const w=new Date(f+'T12:00:00').getDay();return (S.config.horario||{})[w]||[]}
+const esTut=fr=>!!CURRICULO[fr.ar]&&(fr.grupo||'tut')==='tut';
+function franjaTit(fr){const base=CURRICULO[fr.ar]?areaN(fr.ar):(fr.lab||'Otra actividad');return base+(CURRICULO[fr.ar]&&fr.lab?` (${fr.lab})`:'')+(CURRICULO[fr.ar]&&fr.grupo==='otro'?` · ${fr.glab||'otro grupo'}`:'')}
+const supO=t=>String(t).replace(/(\d)\.(er|os|as|o|a)\b/g,'$1.<sup>$2</sup>');
+const refMark=fr=>fr.ref?' <span class="refm" title="Recibo refuerzo">®</span>':'';
 function vHorario(){
   const H=S.config.horario||{};
-  const opts=sel=>Object.entries(CURRICULO).map(([id,a])=>`<option value="${id}" ${sel===id?'selected':''}>${esc(a.corto)}</option>`).join('')+`<option value="otro" ${sel==='otro'?'selected':''}>Otra (recreo, inglés…)</option>`;
-  return `<div class="note" style="margin-bottom:12px">Tu horario semanal. El diario lo usa para preparar cada día y el plan para quien te sustituya.</div>`+[1,2,3,4,5].map(w=>`<div class="card" style="margin-bottom:12px"><h3>${may1(DIAS[w])}</h3>${(H[w]||[]).map((fr,i)=>`<div class="frow"><input type="time" data-hw="${w}" data-hi="${i}" data-hk="ini" value="${fr.ini||''}"><input type="time" data-hw="${w}" data-hi="${i}" data-hk="fin" value="${fr.fin||''}"><select data-hw="${w}" data-hi="${i}" data-hk="ar">${opts(fr.ar)}</select>${fr.ar==='otro'?`<input type="text" data-hw="${w}" data-hi="${i}" data-hk="lab" value="${esc(fr.lab||'')}" placeholder="Qué es" class="flab">`:''}<button class="ic" data-hdel="${w}|${i}" aria-label="Quitar">✕</button></div>`).join('')||'<div class="muted small" style="margin-bottom:8px">Sin franjas.</div>'}<div class="g2b" style="margin-top:8px"><button class="btn sm" data-hadd="${w}">+ Añadir franja</button>${w>1?`<button class="btn sm" data-hcopy="${w}">Copiar del ${DIAS[w-1]}</button>`:'<span></span>'}</div></div>`).join('')+
+  const opts=sel=>Object.entries(CURRICULO).map(([id,a])=>`<option value="${id}" ${sel===id?'selected':''}>${esc(a.corto)}</option>`).join('')+`<option value="otro" ${sel==='otro'?'selected':''}>Otra (lectura, recreo, inglés…)</option>`;
+  const at=(w,i,k)=>`data-hw="${w}" data-hi="${i}" data-hk="${k}"`;
+  return `<div class="note" style="margin-bottom:12px">Tu horario semanal. El planificador lo usa para preparar cada día y el plan para quien te sustituya.</div>`+[1,2,3,4,5].map(w=>`<div class="card" style="margin-bottom:12px"><h3>${may1(DIAS[w])}</h3>${(H[w]||[]).map((fr,i)=>`<div class="fcard" style="--fc:${arCol(fr.ar)}">
+     <div class="frow"><input type="time" ${at(w,i,'ini')} value="${fr.ini||''}"><input type="time" ${at(w,i,'fin')} value="${fr.fin||''}"><select ${at(w,i,'ar')}>${opts(fr.ar)}</select><button class="ic" data-hdel="${w}|${i}" aria-label="Quitar">✕</button></div>
+     ${CURRICULO[fr.ar]?`<div class="frow2"><select ${at(w,i,'grupo')}><option value="tut" ${(fr.grupo||'tut')==='tut'?'selected':''}>Mi grupo: 3.º y 4.º</option><option value="otro" ${fr.grupo==='otro'?'selected':''}>Otro grupo</option></select>${fr.grupo==='otro'?`<input type="text" ${at(w,i,'glab')} value="${esc(fr.glab||'')}" placeholder="Qué grupo (p. ej. 3.er ciclo)">`:`<input type="text" ${at(w,i,'lab')} value="${esc(fr.lab||'')}" placeholder="Detalle opcional (p. ej. robótica)">`}</div>`
+      :`<div class="frow2"><input type="text" ${at(w,i,'lab')} value="${esc(fr.lab||'')}" placeholder="Qué es (lectura, religión, inglés/biblioteca…)" style="grid-column:1/-1"></div>`}
+     <div class="frow2"><label class="chk"><input type="checkbox" ${at(w,i,'ref')} ${fr.ref?'checked':''}> Recibo refuerzo ®</label><input type="text" ${at(w,i,'fijo')} value="${esc(fr.fijo||'')}" placeholder="Texto fijo de cada semana (opcional)"></div>
+   </div>`).join('')||'<div class="muted small" style="margin-bottom:8px">Sin franjas.</div>'}<div class="g2b" style="margin-top:8px"><button class="btn sm" data-hadd="${w}">+ Añadir franja</button>${w>1?`<button class="btn sm" data-hcopy="${w}">Copiar del ${DIAS[w-1]}</button>`:'<span></span>'}</div></div>`).join('')+
+  `<div class="card stack" style="margin-bottom:12px"><h3>Cabecera del plan</h3><div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'heroes')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
+     <button class="cabopt ${S.config.cabecera==='propia'?'on':''}" data-cab="propia">${cabPropia()?`<div class="cabimg" style="background-image:url(${cabPropia()})"></div>`:'<div class="cabimg vacia">Sube una imagen</div>'}<span>Mi imagen</span></button>
+     <button class="cabopt ${S.config.cabecera==='ninguna'?'on':''}" data-cab="ninguna"><div class="cabimg vacia">Sin imagen</div><span>Sin cabecera</span></button></div>
+     <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda solo en este dispositivo. Usa imágenes propias o libres de derechos.</div></div>`+
   `<div class="card stack"><h3>Indicaciones generales para sustitutos</h3><textarea id="avisoSust" placeholder="Rutinas del aula, dónde están los materiales, normas, a quién acudir…">${esc(S.config.avisoSust||'')}</textarea><div class="small muted">Saldrá al principio de cada plan exportado. No pongas aquí datos personales ni de salud del alumnado.</div></div>`;
 }
 function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);fn(H);S.config.horario=H;saveConfig();render()}
-/* ---- diario ---- */
+/* ---- cabecera ---- */
+function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
+function cabeceraHTML(f){const k=S.config.cabecera||'heroes',t=may1(fLarga(f));
+  if(k==='ninguna')return `<div class="cabtxt">${esc(t)}</div>`;
+  if(k==='propia'&&cabPropia())return `<div class="cab"><div class="cabimg big" style="background-image:url(${cabPropia()})"><span>${esc(t)}</span></div></div>`;
+  return `<div class="cab">${(CABECERAS[k]||CABECERAS.heroes).svg(esc(t))}</div>`}
+function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=1200;c.height=300;const x=c.getContext('2d');const r=Math.max(1200/img.width,300/img.height);const w=img.width*r,h=img.height*r;x.drawImage(img,(1200-w)/2,(300-h)/2,w,h);try{localStorage.setItem('evaluapp-cab',c.toDataURL('image/jpeg',.82));S.config.cabecera='propia';saveConfig();render();toast('Cabecera guardada')}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
+/* ---- sesiones ---- */
 const sesId=(f,i)=>`ses-${f}-${i}`;
-function sesDatos(p){const d=p?JSON.parse(JSON.stringify(p.d)):{};
-  if(d.junto===undefined){d.junto=!d.c3&&!d.c4&&!!(d.ud||d.act||d.mat)?true:(d.junto||false)}
-  if(d.junto&&!d.c3&&(d.ud||d.act||d.mat)){d.c3={ud:d.ud||'',act:d.act||'',mat:d.mat||''}}
-  d.c3=d.c3||{};d.c4=d.c4||{};return d}
-function bloqueCurso(i,c,d,ar,lab){
-  const x=d['c'+c]||{};const lc=c==='j'?'ambos':c;const key=c==='j'?'c3':'c'+c;const y=d[key]||{};
-  return `<div class="cblk">${lab?`<div class="clab">${lab}</div>`:''}<select data-sf="${i}" data-sk="${key}.ud"><option value="">Sin unidad</option>${udsDe(ar,lc==='ambos'?'todos':lc).map(u=>`<option value="${u.id}" ${y.ud===u.id?'selected':''}>${esc(u.d.titulo)}${lc==='ambos'?' ('+CURSO_N[udCurso(u)]+')':''}</option>`).join('')}</select>
-   <textarea data-sf="${i}" data-sk="${key}.act" placeholder="Qué se va a hacer (página, actividad, explicación…)" style="min-height:76px">${esc(y.act||'')}</textarea>
-   <input type="text" data-sf="${i}" data-sk="${key}.mat" placeholder="Materiales" value="${esc(y.mat||'')}"></div>`;
+const BLK0=()=>({ud:'',act:'',mat:'',est:'',ref:false,mov:''});
+function sesDatos(p,fr){const d=p?JSON.parse(JSON.stringify(p.d)):{};
+  if(fr&&!esTut(fr)){d.g=Object.assign(BLK0(),d.g||(d.act||d.ud?{ud:d.ud||'',act:d.act||'',mat:d.mat||''}:{}));return d}
+  if(d.junto===undefined)d.junto=!d.c3&&!d.c4&&!!(d.ud||d.act||d.mat);
+  if(!d.c3&&(d.ud||d.act||d.mat))d.c3={ud:d.ud||'',act:d.act||'',mat:d.mat||''};
+  d.c3=Object.assign(BLK0(),d.c3||{});d.c4=Object.assign(BLK0(),d.c4||{});return d}
+const bloquesDe=(fr,d)=>!esTut(fr)?[['g','']]:d.junto?[['c3','3.º y 4.º']]:[['c3','3.º'],['c4','4.º']];
+function getSes(f,i){const fr=franjasDe(f)[i];return {fr,d:sesDatos(S.prog[sesId(f,i)],fr)}}
+function putSes(f,i,d){const fr=franjasDe(f)[i];const id=sesId(f,i);const p={id,t:'ses',ar:CURRICULO[fr.ar]?fr.ar:'otro',f,d:Object.assign({},d,{ini:fr.ini,fin:fr.fin,far:fr.ar,lab:fr.lab||'',grupo:fr.grupo||'tut'})};delete p.d.ud;delete p.d.act;delete p.d.mat;saveProg(p)}
+const vacioB=y=>!y||(!y.act&&!y.ud&&!y.mat);
+const sesVacia=(f,i)=>{const {fr,d}=getSes(f,i);return bloquesDe(fr,d).every(([k])=>vacioB(d[k]))};
+function sesionN(f,i,udId){if(!udId)return null;const l=[];Object.values(S.prog).forEach(p=>{if(p.t!=='ses')return;const d=p.d||{};if([d.c3,d.c4,d.g].some(y=>y&&y.ud===udId)||d.ud===udId)l.push(p.f+'|'+String(d.ini||'').padStart(5,'0'))});l.sort();const me=f+'|'+String((franjasDe(f)[i]||{}).ini||'').padStart(5,'0');const n=l.indexOf(me)+1;const u=S.prog[udId];return n?{n,tot:u?(+u.d.ses||0):0,cod:u?codUd(u):'',tit:u?u.d.titulo:''}:null}
+const EST={'':'Planificada',hecha:'Hecha',nohecha:'No dio tiempo'};
+/* ---- planificador semanal ---- */
+UI.psem=lunesDe(today());
+function celdaTxt(f,i){const {fr,d}=getSes(f,i);const bl=bloquesDe(fr,d);
+  return bl.map(([k,lab])=>{const y=d[k];const t=y.act||(fr.fijo||'');const sn=sesionN(f,i,y.ud);
+    return `<div class="ccol ${y.est}">${bl.length>1?`<b>${lab}</b>`:''}${sn?`<span class="uchip">${esc(sn.cod)} · S${sn.n}${sn.tot?'/'+sn.tot:''}</span>`:''}${t?`<span class="ctx ${y.act?'':'fijo'}">${esc(t).replace(/\n/g,'<br>')}</span>`:'<span class="ctx vacio">—</span>'}${y.ref?'<span class="rtag">Reforzar</span>':''}${y.est==='hecha'?'<span class="est ok">✓</span>':y.est==='nohecha'?'<span class="est no">↷</span>':''}</div>`}).join('')}
+function vSemana(){
+  const l=UI.psem,dias=[0,1,2,3,4].map(n=>addDias(l,n));
+  const head=`<div class="weeknav"><button class="iconbtn" data-psem="-7" style="transform:rotate(180deg)" aria-label="Semana anterior">${ICONS.chev}</button><div><b>Semana del ${new Date(dias[0]+'T12:00').getDate()} al ${fLarga(dias[4]).replace(/^[^,]+, /,'')}</b>${dias.includes(today())?'<span class="small muted"> · esta semana</span>':''}</div><button class="iconbtn" data-psem="7" aria-label="Semana siguiente">${ICONS.chev}</button></div>
+   <div class="g2b" style="margin:10px 0 14px"><button class="btn" data-act="copSem">${ICONS.copy} Copiar la semana anterior</button><button class="btn pri" data-act="expSem">Exportar la semana</button></div>`;
+  if(![1,2,3,4,5].some(w=>((S.config.horario||{})[w]||[]).length))return head+`<div class="card empty"><b>Primero, tu horario</b>Con él, el planificador te muestra cada franja de la semana.<div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
+  const slots=[...new Set(dias.flatMap(f=>franjasDe(f).map(fr=>fr.ini||'')))].sort((a,b)=>a.padStart(5,'0').localeCompare(b.padStart(5,'0')));
+  const grid=`<div class="wgrid deskgrid"><table><thead><tr><th></th>${dias.map(f=>`<th class="${f===today()?'hoy':''}"><button data-pdia="${f}">${may1(DIAS[new Date(f+'T12:00').getDay()])} ${new Date(f+'T12:00').getDate()}</button></th>`).join('')}</tr></thead><tbody>${slots.map(s=>`<tr><td class="hcol">${esc(s)}</td>${dias.map(f=>{const i=franjasDe(f).findIndex(fr=>(fr.ini||'')===s);if(i<0)return '<td></td>';const fr=franjasDe(f)[i];return `<td><button class="wcell" data-sed="${f}|${i}" style="--fc:${arCol(fr.ar)}"><span class="warea">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span>${CURRICULO[fr.ar]||fr.fijo||!sesVacia(f,i)?celdaTxt(f,i):''}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  const lista=`<div class="mobweek">${dias.map(f=>{const frs=franjasDe(f);return `<div class="card wday ${f===today()?'hoy':''}"><button class="wdh" data-pdia="${f}"><b>${may1(fLarga(f).replace(/ de \d{4}$/,''))}</b>${ICONS.chev}</button>${frs.length?frs.map((fr,i)=>`<button class="wrow" data-sed="${f}|${i}" style="--fc:${arCol(fr.ar)}"><span class="wh">${esc(fr.ini||'')}</span><span class="wbody"><span class="warea">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span>${CURRICULO[fr.ar]||fr.fijo||!sesVacia(f,i)?`<span class="wcols">${celdaTxt(f,i)}</span>`:''}</span></button>`).join(''):'<div class="muted small">Sin horario.</div>'}</div>`}).join('')}</div>`;
+  return head+grid+lista;
 }
-function vDiario(){
+/* ---- página del día ---- */
+function vDia(){
   const f=UI.pfecha,frs=franjasDe(f),w=new Date(f+'T12:00:00').getDay();
-  const nav=`<div class="daynav"><button class="iconbtn" data-pday="-1" aria-label="Día anterior" style="transform:rotate(180deg)">${ICONS.chev}</button><div><input type="date" id="pfecha" value="${f}"><div class="small muted" style="text-align:center;margin-top:4px">${may1(fLarga(f))}</div></div><button class="iconbtn" data-pday="1" aria-label="Día siguiente">${ICONS.chev}</button></div>`;
-  const exp=`<div class="g2b" style="margin:12px 0"><button class="btn" data-act="expDia">Exportar este día</button><button class="btn pri" data-act="expSem">Exportar la semana</button></div>`;
+  const nav=`<div class="daynav"><button class="iconbtn" data-pday="-1" aria-label="Día anterior" style="transform:rotate(180deg)">${ICONS.chev}</button><div><input type="date" id="pfecha" value="${f}"></div><button class="iconbtn" data-pday="1" aria-label="Día siguiente">${ICONS.chev}</button></div>`;
+  const acc=`<div class="g3b" style="margin:12px 0"><button class="btn sm" data-psemde="${f}">${ICONS.cal} Semana</button><button class="btn sm" data-act="copDia">${ICONS.copy} Copiar otro día</button><button class="btn sm pri" data-act="expDia">Exportar</button></div>`;
   if(w===0||w===6)return nav+`<div class="card empty"><b>Fin de semana</b>Elige un día lectivo.</div>`;
-  if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b>Configura tu horario semanal para preparar el diario.<div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
+  if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b><div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
   const notas=S.prog[sesId(f,'n')];
-  return nav+exp+frs.map((fr,i)=>{
-    const p=S.prog[sesId(f,i)];const esArea=!!CURRICULO[fr.ar];const d=sesDatos(p);
-    const tit=esArea?areaN(fr.ar):(fr.lab||'Otra actividad');
-    return `<div class="card sescard" style="--sc:var(--t-${{mat:'evaluar',len:'alumno',cmn:'clase',pla:'seneca'}[fr.ar]||'ajustes'})"><div class="seshead"><span class="hora">${esc(fr.ini||'')}–${esc(fr.fin||'')}</span><b>${esc(tit)}</b></div>
-     ${esArea?`<button class="junto ${d.junto?'on':''}" data-junto="${i}"><span class="tg"></span>Lo mismo para 3.º y 4.º</button>
-      ${d.junto?bloqueCurso(i,'j',d,fr.ar,''):bloqueCurso(i,'3',d,fr.ar,'3.º')+bloqueCurso(i,'4',d,fr.ar,'4.º')}`
-     :`<input type="text" data-sf="${i}" data-sk="act" placeholder="Indicaciones (opcional)" value="${esc((p&&p.d.act)||'')}" style="margin-top:10px">`}</div>`}).join('')+
-   `<div class="card stack"><h3>Avisos de este día</h3><textarea data-sf="n" data-sk="notas" placeholder="Salidas, cambios, quién recoge a quién…">${esc(notas?notas.d.notas:'')}</textarea></div>`;
+  return nav+acc+`<div class="dpage">${cabeceraHTML(f)}${frs.map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const conCont=CURRICULO[fr.ar]||fr.fijo||!sesVacia(f,i);
+     return `<button class="drow" data-sed="${f}|${i}"><div class="dtop"><span class="dh">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="dar" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span></div>${conCont?`<div class="dcols n${bl.length}">${celdaTxt(f,i)}</div>`:''}</button>`}).join('')}</div>
+   <div class="card stack" style="margin-top:12px"><h3>Avisos de este día</h3><textarea data-dnota="${f}" placeholder="Salidas, cambios, quién recoge a quién…">${esc(notas?notas.d.notas:'')}</textarea></div>`;
 }
-function guardarSesion(i,k,val){
-  const f=UI.pfecha,id=sesId(f,i),fr=i==='n'?null:franjasDe(f)[+i];
-  const p=S.prog[id]?JSON.parse(JSON.stringify(S.prog[id])):{id,t:'ses',ar:fr?(CURRICULO[fr.ar]?fr.ar:'otro'):'otro',f,d:{}};
-  if(fr){p.d.ini=fr.ini;p.d.fin=fr.fin;p.d.far=fr.ar;p.d.lab=fr.lab||''}
-  if(fr&&CURRICULO[fr.ar]){const d=sesDatos(p);Object.assign(p.d,{junto:d.junto,c3:d.c3,c4:d.c4});delete p.d.ud;delete p.d.act;delete p.d.mat}
-  if(k.includes('.')){const [a,b]=k.split('.');p.d[a]=Object.assign({},p.d[a]||{},{[b]:val})}else p.d[k]=val;
-  saveProg(p);
+/* ---- editor de una sesión ---- */
+function sesEditor(f,i){
+  const {fr}=getSes(f,i);let {d}=getSes(f,i);
+  const blkHTML=()=>bloquesDe(fr,d).map(([k,lab])=>{const y=d[k];const cur=k==='c4'?'4':k==='c3'&&!d.junto?'3':'todos';const sn=sesionN(f,i,y.ud);
+    return `<div class="eblk" data-k="${k}">${lab?`<div class="clab">${lab}</div>`:''}
+     <textarea class="eact" placeholder="${esc(fr.fijo||'Qué se va a hacer: páginas, actividades, explicación…')}" style="min-height:84px">${esc(y.act)}</textarea>
+     ${CURRICULO[fr.ar]?`<div class="erow"><select class="eud"><option value="">Sin unidad</option>${udsDe(fr.ar,cur).map(u=>`<option value="${u.id}" ${y.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select>${sn?`<span class="uchip">Sesión ${sn.n}${sn.tot?' de '+sn.tot:''}</span>`:''}</div>`:''}
+     <input type="text" class="emat" placeholder="Materiales (opcional)" value="${esc(y.mat)}">
+     <div class="seg eest">${Object.entries(EST).map(([v,n])=>`<button data-v="${v}" class="${y.est===v?'on':''}">${n}</button>`).join('')}</div>
+     <div class="erow"><button class="tchip eref ${y.ref?'on':''}">Reforzar</button>${y.est==='nohecha'?`<button class="btn sm epasar">${y.mov?'Pasado al '+fmtF(y.mov)+' · volver a pasar':'Pasar a la próxima sesión'}</button>`:''}</div></div>`}).join('');
+  const leer=m=>{m.querySelectorAll('.eblk').forEach(b=>{const y=d[b.dataset.k];y.act=b.querySelector('.eact').value.trim();const u=b.querySelector('.eud');if(u)y.ud=u.value;y.mat=b.querySelector('.emat').value.trim();y.est=b.querySelector('.eest .on')?.dataset.v||'';y.ref=b.querySelector('.eref').classList.contains('on')})};
+  modal(`<h3 style="margin-bottom:4px"><span style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}</span>${refMark(fr)}</h3><p class="small muted" style="margin:0 0 12px">${may1(fLarga(f))} · ${esc(fr.ini||'')}–${esc(fr.fin||'')}</p>
+   ${esTut(fr)?`<button class="junto ${d.junto?'on':''}" id="eJunto"><span class="tg"></span>Lo mismo para 3.º y 4.º</button>`:''}<div id="eBlks">${blkHTML()}</div>
+   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="eOk">Guardar</button></div>`,(m,close)=>{
+    m.addEventListener('click',e=>{
+      const sb=e.target.closest('.eest button');if(sb){sb.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===sb));leer(m);m.querySelector('#eBlks').innerHTML=blkHTML();return}
+      const rf=e.target.closest('.eref');if(rf){rf.classList.toggle('on');return}
+      if(e.target.closest('#eJunto')){leer(m);d.junto=!d.junto;if(d.junto&&vacioB(d.c3))d.c3=Object.assign({},d.c4);m.querySelector('#eJunto').classList.toggle('on',d.junto);m.querySelector('#eBlks').innerHTML=blkHTML();return}
+      const ps=e.target.closest('.epasar');if(ps){leer(m);const k=ps.closest('.eblk').dataset.k;const r=pasarPendiente(f,i,k,d[k]);if(r){d[k].mov=r;putSes(f,i,d);close();render();toast('Pasado al '+fLarga(r).replace(/ de \d{4}$/,''))}else toast('No encuentro otra sesión de esta área en las próximas semanas');return}
+    });
+    m.addEventListener('change',e=>{if(e.target.classList.contains('eud')){leer(m);m.querySelector('#eBlks').innerHTML=blkHTML()}});
+    m.querySelector('#eOk').onclick=()=>{leer(m);putSes(f,i,d);close();render();toast('Guardado')};
+  });
 }
-function toggleJunto(i){
-  const f=UI.pfecha,id=sesId(f,i),fr=franjasDe(f)[+i];
-  const p=S.prog[id]?JSON.parse(JSON.stringify(S.prog[id])):{id,t:'ses',ar:CURRICULO[fr.ar]?fr.ar:'otro',f,d:{ini:fr.ini,fin:fr.fin,far:fr.ar}};
-  const d=sesDatos(p);p.d=Object.assign(p.d,{junto:!d.junto,c3:d.c3,c4:d.c4});delete p.d.ud;delete p.d.act;delete p.d.mat;
-  saveProg(p);render();
-}
+function pasarPendiente(f,i,k,y){const fr=franjasDe(f)[i];if(!y.act)return '';
+  for(let n=1;n<=60;n++){const g=addDias(f,n);const j=franjasDe(g).findIndex(x=>x.ar===fr.ar&&(x.grupo||'tut')===(fr.grupo||'tut')&&(x.glab||'')===(fr.glab||''));if(j<0)continue;
+    const t=getSes(g,j);const tk=t.d.junto&&k!=='g'?'c3':k;const ty=t.d[tk];const ex=`Pendiente del ${fmtF(f)}: ${y.act}`;
+    if(!ty.act.includes(ex))ty.act=ty.act?ty.act+'\n'+ex:ex;if(!ty.ud&&y.ud)ty.ud=y.ud;putSes(g,j,t.d);return g}
+  return ''}
+function copiarDia(src,dst,soloVacias=true){let c=0;franjasDe(dst).forEach((fr,i)=>{const j=franjasDe(src).findIndex(x=>(x.ini||'')===(fr.ini||'')&&x.ar===fr.ar);if(j<0)return;if(sesVacia(src,j))return;if(soloVacias&&!sesVacia(dst,i))return;const s=getSes(src,j).d;const d=JSON.parse(JSON.stringify(s));['c3','c4','g'].forEach(k=>{if(d[k]){d[k].est='';d[k].mov='';d[k].ref=false}});putSes(dst,i,d);c++});return c}
+function copDiaModal(){modal(`<h3>Copiar otro día en este</h3><p class="small muted" style="margin-top:-6px">Solo se rellenan las franjas vacías de ${fLarga(UI.pfecha)}. Las franjas se emparejan por hora y área.</p><div class="field"><label>Día de origen</label><input type="date" id="cdSrc" value="${addDias(UI.pfecha,-7)}"></div><div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="cdOk">Copiar</button></div>`,(m,close)=>{m.querySelector('#cdOk').onclick=()=>{const n=copiarDia(m.querySelector('#cdSrc').value,UI.pfecha);close();render();toast(n?`${n} ${n===1?'franja copiada':'franjas copiadas'}`:'No había nada que copiar')}})}
+function copSemana(){const l=UI.psem;confirmar(`¿Copiar en esta semana lo de la semana del ${fmtF(addDias(l,-7))}? Solo se rellenan las franjas vacías.`,'Copiar',()=>{let n=0;[0,1,2,3,4].forEach(k=>n+=copiarDia(addDias(l,k-7),addDias(l,k)));render();toast(n?`${n} franjas copiadas`:'No había nada que copiar')})}
 /* ---- exportar plan ---- */
 function bloquesPlan(fechas){
-  const B=[{k:'h1',t:'Plan de clase · 3.º y 4.º'},{k:'p',t:fechas.length>1?`Semana del ${fLarga(fechas[0])} al ${fLarga(fechas[fechas.length-1])}`:may1(fLarga(fechas[0]))}];
+  const B=[{k:'h1',t:'Plan de clase'},{k:'p',t:fechas.length>1?`Semana del ${fLarga(fechas[0])} al ${fLarga(fechas[fechas.length-1])}`:may1(fLarga(fechas[0]))}];
   if(S.config.avisoSust)B.push({k:'h2',t:'Indicaciones generales'},...S.config.avisoSust.split('\n').filter(x=>x.trim()).map(t=>({k:'p',t})));
-  const parte=(y,lab)=>{const u=y.ud&&S.prog[y.ud]?S.prog[y.ud].d:null;
-    if(lab||u)B.push({k:'p',t:`${lab?lab+' — ':''}${u?`${u.tipo==='SdA'?'Situación de aprendizaje':'Unidad'}: ${u.titulo}`:'Sin unidad'}`});
-    if(y.act)y.act.split('\n').filter(x=>x.trim()).forEach(t=>B.push({k:'li',t}));else B.push({k:'p',t:'Sin indicaciones.'});
-    if(y.mat)B.push({k:'p',t:'Materiales: '+y.mat})};
-  fechas.forEach(f=>{
-    const frs=franjasDe(f);if(!frs.length)return;
+  fechas.forEach(f=>{const frs=franjasDe(f);if(!frs.length)return;
     B.push({k:'h2',t:may1(fLarga(f))});
     const n=S.prog[sesId(f,'n')];if(n&&n.d.notas)B.push({k:'p',t:'Avisos: '+n.d.notas});
-    frs.forEach((fr,i)=>{
-      const p=S.prog[sesId(f,i)];const esArea=!!CURRICULO[fr.ar];
-      B.push({k:'h3',t:`${fr.ini||''}–${fr.fin||''} · ${esArea?areaN(fr.ar):(fr.lab||'Otra actividad')}`});
-      if(!esArea){if(p&&p.d.act)B.push({k:'p',t:p.d.act});return}
-      const d=sesDatos(p);
-      const vacio=y=>!y||(!y.ud&&!y.act&&!y.mat);
-      if(d.junto?vacio(d.c3):(vacio(d.c3)&&vacio(d.c4))){B.push({k:'p',t:'Sin indicaciones.'});return}
-      if(d.junto)parte(d.c3,'3.º y 4.º');else{parte(d.c3,'3.º');parte(d.c4,'4.º')}
-    });
-  });
+    frs.forEach((fr,i)=>{const {d}=getSes(f,i);B.push({k:'h3',t:`${fr.ini||''}–${fr.fin||''} · ${franjaTit(fr)}${fr.ref?' (con refuerzo)':''}`});
+      const bl=bloquesDe(fr,d);if(!CURRICULO[fr.ar]&&!fr.fijo&&sesVacia(f,i))return;
+      bl.forEach(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);
+        if(lab||sn)B.push({k:'p',t:`${lab?lab+' — ':''}${sn?`${sn.cod} «${sn.tit}», sesión ${sn.n}${sn.tot?' de '+sn.tot:''}`:''}`.replace(/ — $/,'')});
+        if(t)t.split('\n').filter(x=>x.trim()).forEach(x=>B.push({k:'li',t:x}));else B.push({k:'p',t:'Sin indicaciones.'});
+        if(y.mat)B.push({k:'p',t:'Materiales: '+y.mat})})})});
   return B;
 }
-function fechasExport(sem){if(!sem)return [UI.pfecha];const l=lunesDe(UI.pfecha);return [0,1,2,3,4].map(n=>addDias(l,n))}
+function fechasExport(sem){if(!sem)return [UI.pfecha];const l=UI.ptab==='sem'?UI.psem:lunesDe(UI.pfecha);return [0,1,2,3,4].map(n=>addDias(l,n))}
 function exportModal(sem){
   const fechas=fechasExport(sem);
   modal(`<h3>Exportar ${sem?'la semana':'este día'}</h3><p class="small muted" style="margin-top:-6px">${sem?`Del ${fLarga(fechas[0])} al ${fLarga(fechas[4])}`:may1(fLarga(fechas[0]))}</p>
-   <button class="opt" id="exPdf"><div><b>PDF</b><span>Se abre la ventana de imprimir: elige «Guardar como PDF».</span></div></button>
-   <button class="opt" id="exDoc" ${Sync.ok()?'':'disabled'}><div><b>Documento de Google</b><span>${Sync.ok()?'Se crea en tu Drive de educaand, listo para compartir.':'Necesita la hoja de Google conectada.'}</span></div></button>
+   <button class="opt" id="exPdf"><div><b>PDF con tu formato</b><span>Una página por día con la cabecera. En la ventana de imprimir, elige «Guardar como PDF».</span></div></button>
+   <button class="opt" id="exDoc" ${Sync.ok()?'':'disabled'}><div><b>Documento de Google</b><span>${Sync.ok()?'Se crea en tu Drive de educaand, listo para compartir (sin cabecera).':'Necesita la hoja de Google conectada.'}</span></div></button>
    <div id="exRes"></div><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{
-    m.querySelector('#exPdf').onclick=()=>{close();imprimir(bloquesPlan(fechas))};
+    m.querySelector('#exPdf').onclick=()=>{close();imprimirPlan(fechas)};
     m.querySelector('#exDoc').onclick=async()=>{const b=m.querySelector('#exDoc');b.disabled=true;b.querySelector('span').textContent='Creando el documento…';
       try{const j=await Sync.call({action:'doc',titulo:`Plan de clase · ${sem?'semana del '+fmtF(fechas[0]):fmtF(fechas[0])}`,bloques:bloquesPlan(fechas)});
         if(!j.url)throw new Error('Actualiza el script de la hoja para poder crear documentos.');
@@ -488,15 +536,17 @@ function exportModal(sem){
       catch(e){b.disabled=false;b.querySelector('span').textContent=/desconocida/.test(e.message)?'Actualiza el script de la hoja (versión 1.2) para crear documentos.':e.message}};
   });
 }
-function imprimir(B){
+function imprimirPlan(fechas){
   let el=document.getElementById('print');if(!el){el=document.createElement('div');el.id='print';document.body.appendChild(el)}
-  let html='',ul=false;
-  B.forEach(b=>{if(b.k==='li'){if(!ul){html+='<ul>';ul=true}html+=`<li>${esc(b.t)}</li>`;return}if(ul){html+='</ul>';ul=false}html+=`<${b.k==='p'?'p':b.k}>${esc(b.t)}</${b.k==='p'?'p':b.k}>`});
-  if(ul)html+='</ul>';
-  el.innerHTML=html;document.body.classList.add('printing');
+  const gen=S.config.avisoSust?`<div class="pgen"><b>Indicaciones generales</b>${S.config.avisoSust.split('\n').filter(x=>x.trim()).map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
+  el.innerHTML=fechas.filter(f=>franjasDe(f).length).map((f,ix)=>{const n=S.prog[sesId(f,'n')];
+    return `<section class="ppage">${cabeceraHTML(f)}${ix===0?gen:''}${n&&n.d.notas?`<div class="pnota"><b>Avisos:</b> ${esc(n.d.notas)}</div>`:''}${franjasDe(f).map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const vacia=!CURRICULO[fr.ar]&&!fr.fijo&&sesVacia(f,i);
+      return `<div class="prow"><div class="ptop"><span class="ph">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="par" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${fr.ref?' ®':''}</span></div>${vacia?'':`<div class="pcols n${bl.length}">${bl.map(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);return `<div class="pcol">${bl.length>1?`<b class="pl">${lab}</b>`:''}${sn?`<div class="pu">${esc(sn.cod)} · sesión ${sn.n}${sn.tot?' de '+sn.tot:''}</div>`:''}${t?`<ul>${t.split('\n').filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${y.mat?`<div class="pm">Materiales: ${esc(y.mat)}</div>`:''}${y.ref?'<div class="pr">REFORZAR</div>':''}</div>`}).join('')}</div>`}</div>`}).join('')}</section>`}).join('');
+  document.body.classList.add('printing');
   const fin=()=>{document.body.classList.remove('printing');window.removeEventListener('afterprint',fin)};
-  window.addEventListener('afterprint',fin);setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},60);
+  window.addEventListener('afterprint',fin);setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},150);
 }
+function imprimir(B){imprimirPlan([UI.pfecha])}
 /* ---- Evaluar: unidad en curso ---- */
 function udsEnCurso(){const cs=UI.filtro==='todos'?['3','4']:[UI.filtro];const l=[];cs.forEach(c=>{const u=udActualDe(UI.area,c);if(u&&!l.includes(u))l.push(u)});return l}
 function critsVisibles(){const us=udsEnCurso();const set=new Set(us.flatMap(u=>u.d.crits||[]));if(UI.soloUd&&set.size){const l=CRITS.filter(x=>set.has(x.c));if(l.length)return l}return CRITS}
@@ -564,7 +614,7 @@ function renderChrome(){
    <div class="foot"><div class="sync">${syncHTML()}</div></div>`);
   setHTML('top',k==='inicio'?'':`<div class="toprow"><div class="ttl2"><button class="back" data-tab="inicio" aria-label="Volver">${ICONS.back}</button><span class="ico2">${ICONS[k]}</span><span>${sec.n}</span></div><div class="sync deskonly">${syncHTML()}</div></div>`);
   document.getElementById('top').classList.toggle('empty',k==='inicio');
-  const nb=(n,ic,lab)=>`<button class="${(k===n||(n==='diario'&&k==='prog'&&UI.ptab==='dia'))?'on':''}" data-tab="${n}">${ic}<span>${lab}</span>${n==='avisos'&&avisosN()?`<i class="nbadge">${avisosN()}</i>`:''}</button>`;
+  const nb=(n,ic,lab)=>`<button class="${(k===n||(n==='diario'&&k==='prog'&&(UI.ptab==='dia'||UI.ptab==='sem')))?'on':''}" data-tab="${n}">${ic}<span>${lab}</span>${n==='avisos'&&avisosN()?`<i class="nbadge">${avisosN()}</i>`:''}</button>`;
   setHTML('tabs',`<div class="in5">${nb('inicio',ICONS.inicio,'Inicio')}${nb('diario',ICONS.cal,'Diario')}<button class="fab" data-act="quick" aria-label="Acciones rápidas">${ICONS.plus}</button>${nb('avisos',ICONS.bell,'Avisos')}${nb('ajustes',ICONS.alumno,'Perfil')}</div>`);
 }
 function vInicio(){
@@ -588,7 +638,11 @@ function avisosData(){
   if(r.als&&r.sinEval)L.push({ic:'evaluar',c:'var(--a-evaluar)',t:`${r.sinEval} ${r.sinEval===1?'criterio':'criterios'} sin evaluar`,s:`${esc(areaN(UI.area))} · ${triTxt(UI.tri)}`,a:'data-tab="evaluar"'});
   ['3','4'].forEach(c=>{if(!udActualDe(UI.area,c)&&udsDe(UI.area,c).length)L.push({ic:'layers',c:'var(--a-prog)',t:`${c}.º no tiene unidad en curso`,s:`Márcala en Programación para filtrar Evaluar (${esc(areaN(UI.area))})`,a:'data-goprog="uds"'})});
   const hoy=today(),frs=franjasDe(hoy);
-  if(frs.length){const vac=frs.filter((fr,i)=>CURRICULO[fr.ar]&&!(S.prog[sesId(hoy,i)]&&JSON.stringify(S.prog[sesId(hoy,i)].d).match(/"act":"[^"]/))).length;if(vac)L.push({ic:'cal',c:'var(--teal)',t:`Diario de hoy: ${vac} ${vac===1?'sesión':'sesiones'} sin preparar`,s:'Por si alguien tiene que sustituirte',a:'data-goprog="dia"'})}
+  if(frs.length){const vac=frs.filter((fr,i)=>esTut(fr)&&!fr.fijo&&sesVacia(hoy,i)).length;if(vac)L.push({ic:'cal',c:'var(--teal)',t:`Plan de hoy: ${vac} ${vac===1?'sesión':'sesiones'} sin preparar`,s:'Por si alguien tiene que sustituirte',a:`data-pdia="${hoy}"`})}
+  const desde=addDias(hoy,-21),vistos=new Set();
+  Object.values(S.prog).filter(p=>p.t==='ses'&&p.f>=desde&&p.f<=hoy&&p.ar===UI.area).sort((a,b)=>b.f.localeCompare(a.f)).forEach(p=>{const d=p.d||{};[['c3','3.º'],['c4','4.º'],['g','']].forEach(([k,lab])=>{const y=d[k];if(!y)return;const lb=d.junto&&k==='c3'?'3.º y 4.º':lab;
+    if(y.ref&&y.act){const key='r'+lb+y.act;if(!vistos.has(key)){vistos.add(key);L.push({ic:'alert',c:'var(--l2)',t:`Reforzar${lb?' en '+lb:''}: ${esc(y.act.split('\n')[0])}`,s:`${esc(areaN(p.ar))} · ${fmtF(p.f)}`,a:`data-pdia="${p.f}"`})}}
+    if(y.est==='nohecha'&&!y.mov&&y.act)L.push({ic:'clock',c:'var(--l1)',t:`No dio tiempo${lb?' en '+lb:''}: ${esc(y.act.split('\n')[0])}`,s:`${fmtF(p.f)} · tócalo para pasarlo a la próxima sesión`,a:`data-pdia="${p.f}"`})})});
   if(Sync.ok()&&OPS.length)L.push({ic:'cloud',c:'var(--l2)',t:`${OPS.length} cambios sin subir a la hoja`,s:'Se subirán solos al recuperar la conexión',a:'data-act="syncNow"'});
   if(Sync.lastError)L.push({ic:'cloud',c:'var(--l1)',t:'Error al sincronizar',s:esc(Sync.lastError),a:'data-tab="ajustes"'});
   return L;
@@ -688,17 +742,18 @@ function vUds13(){
    <div class="center"><button class="pillbtn lila" data-act="nuevaUd">${ICONS.plus} Nueva unidad</button></div>`;
 }
 function vProg13(){
-  const titles={uds:'Unidades y situaciones',tri:'Temporalización',dia:'Diario de clase',hor:'Horario'};
+  const titles={uds:'Unidades y situaciones',tri:'Temporalización',sem:'Planificador semanal',dia:'Plan del día',hor:'Horario'};
   if(UI.ptab==='menu'){
     const n=udsDe(UI.area,UI.pcurso).length,hechas=udsDe(UI.area,UI.pcurso).filter(u=>u.d.hecha).length;
     return `<h2>Programación</h2>${ctxRow({tri:false})}<div class="lcard big">
      ${lrow(ICONS.layers,'#9b7be0','Unidades y situaciones',`${n} ${n===1?'unidad':'unidades'} · crea, edita y organiza`,'data-ptab="uds"')}
      ${lrow(ICONS.target,'#48b37f','Temporalización',`${hechas} de ${n} impartidas · distribución por trimestres`,'data-ptab="tri"')}
-     ${lrow(ICONS.cal,'#3fb9c4','Diario de clase','Qué se hace cada día, para 3.º y para 4.º','data-ptab="dia"')}
+     ${lrow(ICONS.grid,'#3fb9c4','Planificador semanal','Toda la semana de un vistazo: 3.º, 4.º y tus otros grupos','data-ptab="sem"')}
+     ${lrow(ICONS.cal,'#4f8fe0','Plan del día','Tu página de cada día, como en tu documento','data-pdia="'+today()+'"')}
      ${lrow(ICONS.clock,'#c9a24c','Horario','Tu semana y las indicaciones para sustitutos','data-ptab="hor"')}
      ${lrow(ICONS.doc,'#8d74d6','Exportar plan para sustitutos','Día o semana en PDF o documento de Google','data-act="expSem"')}</div>`;
   }
-  const sub=UI.ptab==='uds'?vUds13():{tri:vTris,dia:vDiario,hor:vHorario}[UI.ptab]();
+  const sub=UI.ptab==='uds'?vUds13():{tri:vTris,sem:vSemana,dia:vDia,hor:vHorario}[UI.ptab]();
   return `<button class="backrow" data-ptab="menu">${ICONS.back} Programación</button><h2 class="subh">${titles[UI.ptab]}</h2>${['uds','tri'].includes(UI.ptab)?ctxRow({tri:false}):''}${sub}`;
 }
 VIEWS.inicio=vInicio;VIEWS.evaluar=vEvaluar13;VIEWS.clase=vClase13;VIEWS.alumno=vAlumno13;VIEWS.seneca=vSeneca13;VIEWS.prog=vProg13;VIEWS.avisos=vAvisos;
@@ -744,7 +799,7 @@ function quitarEjemplo(){
 document.addEventListener('click',e=>{
   const t=e.target.closest('button,a,[data-cell]');if(!t)return;
   const d=t.dataset;
-  if(d.tab){if(d.tab==='diario'){UI.tab='prog';UI.ptab='dia';UI.pfecha=today()}else{UI.tab=d.tab;if(d.tab==='prog')UI.ptab='menu';if(d.tab==='evaluar')UI.evDet=false}render();scrollTo(0,0);return}
+  if(d.tab){if(d.tab==='diario'){UI.tab='prog';UI.ptab='sem';UI.psem=lunesDe(today())}else{UI.tab=d.tab;if(d.tab==='prog')UI.ptab='menu';if(d.tab==='evaluar')UI.evDet=false}render();scrollTo(0,0);return}
   if(d.goprog){UI.tab='prog';UI.ptab=d.goprog;render();scrollTo(0,0);return}
   if(d.evc){UI.crit=d.evc;UI.evDet=true;render();scrollTo(0,0);return}
   if(d.evtab){UI.evTab=d.evtab;render();return}
@@ -754,7 +809,11 @@ document.addEventListener('click',e=>{
   if(d.utri){UI.utri=d.utri;render();return}
   if(d.ptab){UI.ptab=d.ptab;render();return}
   if(d.pcurso){UI.pcurso=d.pcurso;render();return}
-  if(d.junto!==undefined){toggleJunto(d.junto);return}
+  if(d.psem){UI.psem=addDias(UI.psem,+d.psem);render();return}
+  if(d.pdia){UI.tab='prog';UI.ptab='dia';UI.pfecha=d.pdia;render();scrollTo(0,0);return}
+  if(d.psemde){UI.ptab='sem';UI.psem=lunesDe(d.psemde);render();scrollTo(0,0);return}
+  if(d.sed){const [f,i]=d.sed.split('|');sesEditor(f,+i);return}
+  if(d.cab){if(d.cab==='propia'&&!cabPropia()){document.getElementById('cabFile').click();return}S.config.cabecera=d.cab;saveConfig();render();return}
   if(d.ud){udModal(d.ud);return}
   if(d.pday){UI.pfecha=addDias(UI.pfecha,+d.pday);render();return}
   if(d.hadd){setHorario(H=>{const l=H[d.hadd];const last=l[l.length-1];l.push({ini:last?last.fin:'09:00',fin:'',ar:UI.area})});return}
@@ -785,6 +844,8 @@ document.addEventListener('click',e=>{
     case 'nuevaUd':udModal();break;
     case 'expDia':exportModal(false);break;
     case 'expSem':exportModal(true);break;
+    case 'copSem':copSemana();break;
+    case 'copDia':copDiaModal();break;
     case 'prox':toast('Programación llegará en la próxima versión');break;
     case 'demo':demo();break;
     case 'informe':copiar(informeTexto(S.config.alumnos.find(a=>a.id===UI.alumno)));break;
@@ -804,8 +865,9 @@ document.addEventListener('submit',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='pfecha'){UI.pfecha=t.value||today();render();return}
-  if(t.dataset.sf!==undefined){guardarSesion(t.dataset.sf,t.dataset.sk,t.value);toast('Guardado');return}
-  if(t.dataset.hw){const w=t.dataset.hw,i=+t.dataset.hi,k=t.dataset.hk,v=t.value;setHorario(H=>{H[w][i]=Object.assign({},H[w][i],{[k]:v});if(k==='fin'&&H[w][i+1]&&!H[w][i+1].ini)H[w][i+1].ini=v});return}
+  if(t.dataset.dnota){const f=t.dataset.dnota,id=sesId(f,'n');saveProg({id,t:'ses',ar:'otro',f,d:{notas:t.value}});toast('Guardado');return}
+  if(t.id==='cabFile'&&t.files[0]){subirCabecera(t.files[0]);t.value='';return}
+  if(t.dataset.hw){const w=t.dataset.hw,i=+t.dataset.hi,k=t.dataset.hk,v=t.type==='checkbox'?t.checked:t.value;setHorario(H=>{H[w][i]=Object.assign({},H[w][i],{[k]:v});if(k==='fin'&&H[w][i+1]&&!H[w][i+1].ini)H[w][i+1].ini=v});return}
   if(t.id==='avisoSust'){S.config.avisoSust=t.value;saveConfig();toast('Guardado');return}
   if(t.id==='fecha'){UI.fecha=t.value||today();render()}
   else if(t.id==='selAl'){UI.alumno=t.value;render()}

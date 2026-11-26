@@ -1,6 +1,6 @@
 // Evalúapp · service worker. Al publicar cambios, sube el número de CACHE.
-const CACHE = 'evaluapp-8';
-const SHELL = ['./', 'index.html', 'styles.css', 'curriculo.js', 'app.js', 'manifest.webmanifest', 'icons/logo.png', 'icons/mark.png', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'evaluapp-10';
+const SHELL = ['./', 'index.html', 'styles.css', 'curriculo.js', 'cabeceras.js', 'app.js', 'fonts/amatic-sc-700.woff2', 'fonts/bangers-400.woff2', 'manifest.webmanifest', 'icons/logo.png', 'icons/mark.png', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
