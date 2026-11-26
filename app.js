@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.5.2';
+const APP_VERSION='1.6.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -775,11 +775,40 @@ function vAlumno13(){
   return `<h2>Alumno</h2>${sw}${pills('altab',UI.alTab,[['ficha','Ficha'],['eval','Evaluación'],['seg','Seguimiento']])}${ctxRow({curso:true})}${body}`;
 }
 /* ---- séneca ---- */
+/* ---- AutoNotas Séneca ---- */
+const SEN_PREF0={mat:'MAT',len:'LCL',cmn:'CMN',pla:'EAR'};
+const senPref=ar=>((S.config.senPref||{})[ar]||SEN_PREF0[ar]||ar.toUpperCase());
+function nombresSen(){try{return JSON.parse(localStorage.getItem('evaluapp-nombres')||'{}')}catch(e){return {}}}
+function setNombresSen(o){localStorage.setItem('evaluapp-nombres',JSON.stringify(o))}
+const nota2=v=>v==null?'':aNota(v).toFixed(2).replace('.',',');
+function autoNotas(curso){const regs=periodRegs(),N=nombresSen(),als=alumnosOrd().filter(a=>a.curso===curso);const crs=CRITS.filter(x=>!(x.solo4&&curso==='3'));
+  const EXP=UI.area==='pla'?{EP:['3.1','3.2','4.2']}:{};const cols=crs.flatMap(x=>(EXP[x.c]||[x.c]).map(o=>({c:x.c,o})));
+  const cods=cols.map(k=>`${senPref(UI.area)}.${curso}.${k.o}`);const filas=[],sinNombre=[],sinNotas=[];
+  als.forEach(al=>{const v=cols.map(k=>nota2(nivelMedio(regs,al.id,k.c)));if(v.every(x=>x===''))return sinNotas.push(al);const n=(N[al.id]||'').trim();if(!n)return sinNombre.push(al);filas.push([n,...v])});
+  const usadas=cods.filter((c,j)=>filas.some(f=>f[j+1]!==''));const idx=cods.map((c,j)=>usadas.includes(c)?j:-1).filter(j=>j>=0);
+  return {txt:[['ALUMNO',...idx.map(j=>cods[j])].join('\t'),...filas.map(f=>[f[0],...idx.map(j=>f[j+1])].join('\t'))].join('\n'),n:filas.length,crs:idx.length,sinNombre,sinNotas,cods:idx.map(j=>cods[j])}}
+function autoNotasModal(){const r=autoNotas(UI.curso);
+  modal(`<h3>Copiar para AutoNotas</h3><p class="small muted" style="margin-top:-6px">${esc(areaN(UI.area))} · ${UI.curso}.º · ${TRI_N[UI.tri]}</p>
+   ${r.n?`<div class="note">Se copian <b>${r.n}</b> ${r.n===1?'alumno':'alumnos'} y <b>${r.crs}</b> ${r.crs===1?'criterio':'criterios'} (${r.cods.map(esc).join(', ')}), con dos decimales.</div>`:''}
+   ${r.sinNombre.length?`<div class="note warn" style="margin-top:10px"><b>${r.sinNombre.length} sin nombre de Séneca:</b> ${r.sinNombre.map(a=>esc(a.nombre)).join(', ')}. No se copian; añade su nombre en «Nombres como en Séneca».</div>`:''}
+   ${!r.n?`<div class="card empty" style="margin-top:10px">No hay notas que copiar${r.sinNombre.length?' con nombre de Séneca':''}.</div>`:''}
+   <ol class="small" style="margin:12px 0 0;padding-left:18px;line-height:1.5"><li>En Séneca, abre la actividad y el grupo de ${UI.curso}.º.</li><li>En AutoNotas pulsa «Importar», pega y «Aceptar».</li><li>Revisa con «Ver» que cada nota está en su sitio antes de «Aplicar notas».</li></ol>
+   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cerrar</button>${r.n?'<button class="btn pri" id="anOk">Copiar</button>':''}</div>`,(m,close)=>{const b=m.querySelector('#anOk');if(b)b.onclick=()=>{copiar(r.txt);close()}})}
+function nombresModal(){const N=nombresSen(),als=alumnosOrd().filter(a=>a.curso===UI.curso);
+  modal(`<h3>Nombres como en Séneca · ${UI.curso}.º</h3><p class="small muted" style="margin-top:-6px">Escríbelos igual que en Séneca: «Apellidos, Nombre». Se guardan solo en este dispositivo, nunca en la hoja de Google.</p>
+   <details style="margin-bottom:10px"><summary class="small" style="cursor:pointer;color:var(--teal)">Pegar la lista de Séneca para autocompletar</summary><textarea id="nmLista" placeholder="Un alumno por línea, copiado de Séneca" style="min-height:90px;margin-top:8px"></textarea></details>
+   <datalist id="nmDl"></datalist>
+   <div class="stack">${als.map(a=>`<div class="field"><label>${esc(a.nombre)}</label><input type="text" list="nmDl" data-nm="${a.id}" value="${esc(N[a.id]||'')}" placeholder="Apellidos, Nombre" autocomplete="off"></div>`).join('')||'<div class="muted">No hay alumnos de este curso.</div>'}</div>
+   <div class="field" style="margin-top:14px"><label>Código del área en Séneca</label><input type="text" id="nmPref" value="${esc(senPref(UI.area))}" style="text-transform:uppercase"><div class="small muted" style="margin-top:4px">Es lo que va antes del curso: ${esc(senPref(UI.area))}.${UI.curso}.1.1 en ${esc(areaN(UI.area))}.</div></div>
+   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="nmOk">Guardar</button></div>`,(m,close)=>{
+    const dl=m.querySelector('#nmDl');m.querySelector('#nmLista').addEventListener('input',e=>{dl.innerHTML=e.target.value.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>`<option value="${esc(x)}">`).join('')});
+    m.querySelector('#nmOk').onclick=()=>{const o=nombresSen();m.querySelectorAll('[data-nm]').forEach(i=>{const v=i.value.trim();if(v)o[i.dataset.nm]=v;else delete o[i.dataset.nm]});setNombresSen(o);
+      const p=m.querySelector('#nmPref').value.trim().toUpperCase().replace(/\.$/,'');if(p&&p!==senPref(UI.area)){S.config.senPref=Object.assign({},S.config.senPref,{[UI.area]:p});saveConfig()}close();render();toast('Guardado')}})}
 function vSeneca13(){
   const {als,crs,rows}=senecaData(UI.curso);
   const sync=Sync.ok()?lrow(ICONS.cloud,'var(--l3)','Hoja de Google conectada',OPS.length?`${OPS.length} cambios pendientes de subir`:'Tus notas están guardadas en tu Drive','data-tab="ajustes"'):lrow(ICONS.cloud,'var(--l2)','Hoja de Google sin conectar','Conéctala para tener los datos en el móvil y en el PC','data-tab="ajustes"');
   return `<h2>Séneca</h2>${ctxRow({curso:false})}
-  <div class="lcard">${lrow(ICONS.copy,'var(--a-seneca)','Copiar tabla',`Notas de ${UI.curso}.º para pasarlas al cuaderno`,'data-act="copySen"')}${lrow(ICONS.dl,'var(--a-seneca)','Exportar a hoja de cálculo','Archivo CSV para Excel o Google Sheets','data-act="csvSen"')}${lrow(ICONS.ajustes,'var(--a-ajustes)','Configuración','Fechas de trimestres y conversión de niveles a nota','data-tab="ajustes"')}</div>
+  <div class="lcard">${(()=>{const N=nombresSen(),al=alumnosOrd().filter(a=>a.curso===UI.curso),f=al.filter(a=>!N[a.id]).length;return lrow(ICONS.copy,'var(--a-seneca)','Copiar para AutoNotas',`Notas de ${UI.curso}.º con dos decimales, listas para pegar en Séneca`,'data-act="autoNotas"')+lrow(ICONS.alumno||ICONS.copy,f?'var(--l2)':'var(--l3)','Nombres como en Séneca',f?`${f===1?'Falta':'Faltan'} ${f} de ${al.length} · solo en este dispositivo`:`${al.length} de ${al.length} · solo en este dispositivo`,'data-act="nombresSen"')})()}${lrow(ICONS.copy,'var(--a-seneca)','Copiar tabla',`Notas de ${UI.curso}.º para pasarlas al cuaderno`,'data-act="copySen"')}${lrow(ICONS.dl,'var(--a-seneca)','Exportar a hoja de cálculo','Archivo CSV para Excel o Google Sheets','data-act="csvSen"')}${lrow(ICONS.ajustes,'var(--a-ajustes)','Configuración','Fechas de trimestres y conversión de niveles a nota','data-tab="ajustes"')}</div>
   <div class="lcard ${Sync.ok()?'ok':''}" style="margin-top:12px">${sync}</div>
   ${CURRICULO[UI.area].nota?`<div class="note" style="margin-top:12px">${esc(CURRICULO[UI.area].nota)}</div>`:''}
   <div style="margin:14px 0 10px">${pills('curso',UI.curso,[['3','3.º'],['4','4.º']])}</div>
@@ -907,8 +936,10 @@ document.addEventListener('click',e=>{
     case 'prox':toast('Programación llegará en la próxima versión');break;
     case 'demo':demo();break;
     case 'informe':copiar(informeTexto(S.config.alumnos.find(a=>a.id===UI.alumno)));break;
+    case 'autoNotas':autoNotasModal();break;
+    case 'nombresSen':nombresModal();break;
     case 'copySen':copiar(senecaTSV('\t'));break;
-    case 'csvSen':descargar(`seneca-mates-${UI.curso}-${['1T','2T','3T','curso'][UI.tri]}.csv`,'﻿'+senecaTSV(';'));break;
+    case 'csvSen':descargar(`seneca-${UI.area}-${UI.curso}-${['1T','2T','3T','curso'][UI.tri]}.csv`,'﻿'+senecaTSV(';'));break;
     case 'backup':descargar(`evaluapp-copia-${today()}.json`,JSON.stringify(S,null,1),'application/json');break;
     case 'wipe':confirmar('¿Borrar todos los alumnos y registros? Descarga antes una copia.','Borrar todo',()=>{allRegsRaw().forEach(r=>{dropReg(r.id);OPS.push({op:'del',id:r.id})});Object.keys(S.prog).forEach(id=>OPS.push({op:'del',id}));S.prog={};S.config=Object.assign(DEF_CONFIG(),{notas:S.config.notas,tri:S.config.tri,horario:S.config.horario});saveConfig();render();toast('Datos borrados')});break;
     case 'quitarDemo':quitarEjemplo();break;

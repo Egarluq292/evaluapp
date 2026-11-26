@@ -562,3 +562,4 @@ nav.tabs{background:#121c2c}
   #print .cabp span{font-size:34pt}
 }
 .cabp img{aspect-ratio:3.8/1;object-fit:cover;object-position:50% 25%}
+.note.warn{border-color:rgba(232,180,90,.45);background:rgba(232,180,90,.08)}
