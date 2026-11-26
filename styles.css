@@ -544,3 +544,10 @@ nav.tabs{background:#121c2c}
 .hcell{hyphens:manual;overflow-wrap:break-word;word-break:normal}
 @media(max-width:699px){.hgrid table{border-spacing:3px}.hgrid th:first-child,.hgrid td.hcol{width:42px}.hn{font-size:10.5px;letter-spacing:-.1px}.hs{font-size:9.5px}.hcell{padding:5px 3px}}
 @media(max-width:699px){.hn.lg{font-size:9px;letter-spacing:-.2px}}
+/* v1.5.1: casillas iguales */
+.hcell{height:66px;min-height:0;overflow:hidden}
+@media(min-width:700px){.hcell{height:72px}}
+.hs.hm{color:var(--l3)}
+.dmis{font-size:12.5px;color:#7a7f88;text-align:right;margin-top:2px}
+@media print{#print .pmis{font-size:9.5pt;color:#555;text-align:right}}
+@media(max-width:699px){.hn{font-size:10px}.hs{font-size:9px;line-height:1.15}.hs.lg{font-size:8px;letter-spacing:-.2px}}

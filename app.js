@@ -21,7 +21,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.5.0';
+const APP_VERSION='1.5.1';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -403,15 +403,23 @@ function udModal(id){
 /* ---- horario ---- */
 const AREA_COL={mat:'#e0913a',len:'#4f8fe0',cmn:'#58a85c',pla:'#b968a6',otro:'#b07a52'};
 const arCol=ar=>AREA_COL[CURRICULO[ar]?ar:'otro'];
-function franjasDe(f){const w=new Date(f+'T12:00:00').getDay();return (S.config.horario||{})[w]||[]}
+function franjasDe(f){const w=new Date(f+'T12:00:00').getDay();return ((S.config.horario||{})[w]||[]).map(normFr)}
+const MIS=['Inglés','Música','Educación Física','Religión','Atención educativa','Francés'];
+const MIS_AB={'Educación Física':'E.\u00a0Física','Atención educativa':'At.\u00a0educativa'};
+const hsCls=t=>Math.max(...String(t).split(/[\s/]+/).map(x=>x.length))>8?' lg':'';
+const GRUPOS=[['cmn','3.er ciclo'],['pla','3.er ciclo']];
+function normMis(t){const k=String(t||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f.]/g,'');if(!k)return '';const m={'ingles':'Inglés','musica':'Música','ed fisica':'Educación Física','e fisica':'Educación Física','educacion fisica':'Educación Física','ef':'Educación Física','religion':'Religión','atencion educativa':'Atención educativa','valores':'Atención educativa','frances':'Francés'};return m[k]||''}
+function normGl(t){return /^\s*3\s*\.?\s*er\s*ciclo\s*$/i.test(t||'')?'3.er ciclo':/^\s*2\s*\.?\s*[ºo]\s*ciclo\s*$/i.test(t||'')?'2.º ciclo':(t||'')}
+function normFr(fr){if(!fr||!CURRICULO[fr.ar]||fr.grupo!=='otro')return fr;const n=Object.assign({},fr);n.glab=normGl(n.glab);if(!n.mis&&normMis(n.lab)){n.mis=normMis(n.lab);n.lab=''}return n}
+const misTxt=fr=>fr&&fr.grupo==='otro'&&fr.mis?`Mis alumnos: ${fr.mis}`:'';
 const esTut=fr=>!!CURRICULO[fr.ar]&&(fr.grupo||'tut')==='tut';
 function franjaTit(fr){const base=CURRICULO[fr.ar]?areaN(fr.ar):(fr.lab||'Otra actividad');return base+(CURRICULO[fr.ar]&&fr.lab?` (${fr.lab})`:'')+(CURRICULO[fr.ar]&&fr.grupo==='otro'?` · ${fr.glab||'otro grupo'}`:'')}
 const supO=t=>String(t).replace(/(\d)\.(er|os|as|o|a)\b/g,'$1.<sup>$2</sup>');
 const refMark=fr=>fr.ref?' <span class="refm" title="Recibo refuerzo">®</span>':'';
 function vHorario(){
   const T=franjasT(),H=S.config.horario||{};
-  const celda=(w,fr)=>{if(!fr)return `<span class="hvac">+</span>`;const otro=!CURRICULO[fr.ar];
-    const tx=otro?(fr.lab||'Otra'):AB_AREA[fr.ar];const lw=Math.max(...tx.split(/[\s/]+/).map(x=>x.length));return `<span class="hn ${lw>8?'lg':''}">${esc(tx)}${fr.ref?' ®':''}</span>${!otro&&fr.lab?`<span class="hs">${esc(fr.lab)}</span>`:''}${!otro&&fr.grupo==='otro'?`<span class="hs">${supO(esc(fr.glab||'Otro grupo'))}</span>`:''}`};
+  const celda=(w,fr0)=>{if(!fr0)return `<span class="hvac">+</span>`;const fr=normFr(fr0),otro=!CURRICULO[fr.ar];const tx=otro?(fr.lab||'Otra'):AB_AREA[fr.ar];const lw=Math.max(...tx.split(/[\s/]+/).map(x=>x.length));
+    return `<span class="hn ${lw>8?'lg':''}">${esc(tx)}${fr.ref?' ®':''}</span>${!otro&&fr.grupo==='otro'?`<span class="hs hg">${supO(esc(fr.glab||'Otro grupo'))}</span>`:''}${!otro&&fr.lab?`<span class="hs${hsCls(fr.lab)}">${esc(fr.lab)}</span>`:''}${fr.mis?`<span class="hs hm${hsCls(fr.mis)}">↳\u00a0${esc(MIS_AB[fr.mis]||fr.mis)}</span>`:''}`};
   const grid=T.length?`<div class="hgrid"><table><thead><tr><th></th>${[1,2,3,4,5].map(w=>`<th><button data-hdia="${w}">${DIAS[w].slice(0,3)}<span>Copiar</span></button></th>`).join('')}</tr></thead><tbody>${T.map(t=>`<tr><td class="hcol"><button data-hslot="${t.ini}">${esc(t.ini)}<span>${esc(t.fin)}</span></button></td>${[1,2,3,4,5].map(w=>{const fr=(H[w]||[]).find(x=>x.ini===t.ini);return `<td><button class="hcell ${fr?'':'vac'}" data-hcel="${w}|${t.ini}" style="--fc:${fr?arCol(fr.ar):'transparent'}">${celda(w,fr)}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`:'';
   return `<div class="note" style="margin-bottom:12px">1. Crea las franjas horarias: valen para toda la semana. 2. Toca cada casilla para elegir qué das; al guardar puedes aplicarlo a varios días a la vez. 3. Toca un día para copiarlo en otros.</div>
    <div class="card" style="margin-bottom:12px"><div class="hhead"><h3>Tu horario</h3><button class="btn sm" data-act="hAddSlot">+ Franja</button></div>${grid||`<div class="empty" style="padding:14px 0"><b>Aún no hay franjas</b><div style="margin-top:10px"><button class="btn pri" data-act="hPlantilla">Crear 09:00 – 14:00 con recreo</button></div></div>`}</div>`+
@@ -421,29 +429,35 @@ function vHorario(){
      <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda solo en este dispositivo. Usa imágenes propias o libres de derechos.</div></div>`+
   `<div class="card stack"><h3>Indicaciones generales para sustitutos</h3><textarea id="avisoSust" placeholder="Rutinas del aula, dónde están los materiales, normas, a quién acudir…">${esc(S.config.avisoSust||'')}</textarea><div class="small muted">Saldrá al principio de cada plan exportado. No pongas aquí datos personales ni de salud del alumnado.</div></div>`;
 }
-const AB_AREA={mat:'Mates',len:'Lengua',cmn:'C. Medio',pla:'Plástica'};
+const AB_AREA={mat:'Mates',len:'Lengua',cmn:'C.\u00a0Medio',pla:'Plástica'};
 const hm=t=>{const [h,m]=(t||'0:0').split(':').map(Number);return h*60+m},mh=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
 function franjasT(){if(S.config.franjas&&S.config.franjas.length)return S.config.franjas;const m={};Object.values(S.config.horario||{}).forEach(l=>(l||[]).forEach(fr=>{if(fr.ini&&!m[fr.ini])m[fr.ini]={ini:fr.ini,fin:fr.fin||''}}));return Object.values(m).sort((a,b)=>hm(a.ini)-hm(b.ini))}
-function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);const T=JSON.parse(JSON.stringify(franjasT()));fn(H,T);T.sort((a,b)=>hm(a.ini)-hm(b.ini));[1,2,3,4,5].forEach(w=>{H[w]=H[w].filter(fr=>T.some(t=>t.ini===fr.ini)).map(fr=>Object.assign(fr,{fin:T.find(t=>t.ini===fr.ini).fin})).sort((a,b)=>hm(a.ini)-hm(b.ini))});S.config.horario=H;S.config.franjas=T;saveConfig();render()}
+function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);const T=JSON.parse(JSON.stringify(franjasT()));fn(H,T);T.sort((a,b)=>hm(a.ini)-hm(b.ini));[1,2,3,4,5].forEach(w=>{H[w]=H[w].map(normFr).filter(fr=>T.some(t=>t.ini===fr.ini)).map(fr=>Object.assign(fr,{fin:T.find(t=>t.ini===fr.ini).fin})).sort((a,b)=>hm(a.ini)-hm(b.ini))});S.config.horario=H;S.config.franjas=T;saveConfig();render()}
 const DCHK=(sel,fijo)=>`<div class="dchk">${[1,2,3,4,5].map(w=>`<button class="tchip ${sel.includes(w)?'on':''}" data-w="${w}" ${w===fijo?'disabled':''}>${DIAS[w].slice(0,3)}</button>`).join('')}<button class="tchip" data-w="todos">Toda la semana</button></div>`;
 function dchkMount(m){m.querySelector('.dchk').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.w==='todos'){m.querySelectorAll('.dchk [data-w]:not([data-w="todos"])').forEach(x=>x.classList.add('on'));return}b.classList.toggle('on')});return ()=>[...m.querySelectorAll('.dchk .on[data-w]')].map(b=>+b.dataset.w).filter(Boolean)}
 function celdaModal(w,ini){
-  const T=franjasT(),t=T.find(x=>x.ini===ini),fr0=((S.config.horario||{})[w]||[]).find(x=>x.ini===ini);let fr=Object.assign({ar:'',grupo:'tut',glab:'',lab:'',ref:false,fijo:''},fr0||{});
-  const opts=['',...Object.keys(CURRICULO),'otro'].map(id=>`<option value="${id}" ${fr.ar===id?'selected':''}>${id===''?'— Libre —':id==='otro'?'Otra (lectura, recreo, inglés…)':esc(CURRICULO[id].corto)}</option>`).join('');
-  const det=()=>!fr.ar?'':CURRICULO[fr.ar]?`<div class="field"><label>Grupo</label><div class="seg" id="cGr"><button data-v="tut" class="${fr.grupo!=='otro'?'on':''}">Mi grupo: 3.º y 4.º</button><button data-v="otro" class="${fr.grupo==='otro'?'on':''}">Otro grupo</button></div></div>${fr.grupo==='otro'?`<div class="field"><label>Qué grupo</label><input type="text" id="cGl" value="${esc(fr.glab)}" placeholder="P. ej. 3.er ciclo"></div>`:''}<div class="field"><label>Detalle (opcional)</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="P. ej. robótica"></div>`
-    :`<div class="field"><label>Qué es</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="Lectura, religión, inglés/biblioteca…"></div>`;
+  const T=franjasT(),t=T.find(x=>x.ini===ini),fr0=normFr(((S.config.horario||{})[w]||[]).find(x=>x.ini===ini));let fr=Object.assign({ar:'',grupo:'tut',glab:'',lab:'',mis:'',ref:false,fijo:''},fr0||{});
+  const clave=f=>!f.ar?'':CURRICULO[f.ar]&&f.grupo==='otro'?f.ar+'|'+f.glab:f.ar;
+  const extra=fr.grupo==='otro'&&CURRICULO[fr.ar]&&!GRUPOS.some(([a,g])=>a===fr.ar&&g===fr.glab)?[[fr.ar,fr.glab]]:[];
+  const opciones=[['','— Libre —'],...Object.keys(CURRICULO).map(id=>[id,CURRICULO[id].corto]),...GRUPOS.concat(extra).map(([a,g])=>[a+'|'+g,CURRICULO[a].corto+' · '+g]),['otro','Otra (lectura, recreo, inglés…)']];
+  const opts=()=>opciones.map(([v,n])=>`<option value="${esc(v)}" ${clave(fr)===v?'selected':''}>${esc(n)}</option>`).join('');
+  const det=()=>{if(!fr.ar)return '';if(!CURRICULO[fr.ar])return `<div class="field"><label>Qué es</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="Lectura, religión, inglés/biblioteca…"></div>`;
+    const misOtro=fr.mis&&!MIS.includes(fr.mis);
+    return (fr.grupo==='otro'?`<div class="field"><label>Mientras, mis alumnos tienen</label><select id="cMis"><option value="">— Elige —</option>${MIS.map(m=>`<option ${fr.mis===m?'selected':''}>${m}</option>`).join('')}<option value="__otra" ${misOtro?'selected':''}>Otra…</option></select>${misOtro?`<input type="text" id="cMisT" value="${esc(fr.mis)}" style="margin-top:8px">`:''}<div class="small muted" style="margin-top:4px">Saldrá en el plan para quien te sustituya.</div></div>`:'')+
+      `<div class="field"><label>Detalle (opcional)</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="P. ej. robótica"></div>`};
   const resto=()=>!fr.ar?'':`<label class="chk"><input type="checkbox" id="cRef" ${fr.ref?'checked':''}> Recibo refuerzo ®</label><div class="field"><label>Texto fijo de cada semana (opcional)</label><input type="text" id="cFijo" value="${esc(fr.fijo)}" placeholder="P. ej. revisar tareas pendientes"></div>`;
   modal(`<h3 style="margin-bottom:2px">${may1(DIAS[w])} · ${esc(t.ini)}–${esc(t.fin)}</h3><p class="small muted" style="margin:0 0 10px">Qué das en esta franja</p>
-   <div class="field"><label>Área o actividad</label><select id="cAr">${opts}</select></div><div id="cDet">${det()}</div><div id="cRes" class="stack">${resto()}</div>
+   <div class="field"><label>Área o grupo</label><select id="cAr">${opts()}</select></div><div id="cDet">${det()}</div><div id="cRes" class="stack">${resto()}</div>
    <div class="field"><label>Aplicar también a</label>${DCHK([w],w)}</div>
    <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="cOk">Guardar</button></div>`,(m,close)=>{
     const dias=dchkMount(m);
-    const leer=()=>{fr.ar=m.querySelector('#cAr').value;const g=m.querySelector('#cGr .on');if(g)fr.grupo=g.dataset.v;['cGl:glab','cLab:lab','cFijo:fijo'].forEach(x=>{const [id,k]=x.split(':');const el=m.querySelector('#'+id);if(el)fr[k]=el.value.trim()});const r=m.querySelector('#cRef');if(r)fr.ref=r.checked};
+    const leer=()=>{const el=id=>m.querySelector('#'+id);if(el('cLab'))fr.lab=el('cLab').value.trim();if(el('cFijo'))fr.fijo=el('cFijo').value.trim();if(el('cRef'))fr.ref=el('cRef').checked;
+      if(el('cMis')){const v=el('cMis').value;fr.mis=v==='__otra'?(el('cMisT')?el('cMisT').value.trim():''):v}};
     const pintar=()=>{m.querySelector('#cDet').innerHTML=det();m.querySelector('#cRes').innerHTML=resto()};
-    m.querySelector('#cAr').onchange=()=>{leer();pintar()};
-    m.querySelector('#cDet').addEventListener('click',e=>{const b=e.target.closest('#cGr button');if(!b)return;leer();fr.grupo=b.dataset.v;pintar()});
-    m.querySelector('#cOk').onclick=()=>{leer();const ds=[...new Set([w,...dias()])];
-      setHorario(H=>ds.forEach(d=>{H[d]=H[d].filter(x=>x.ini!==ini);if(fr.ar){const n={ini,fin:t.fin,ar:fr.ar};if(CURRICULO[fr.ar]){if(fr.grupo==='otro'){n.grupo='otro';n.glab=fr.glab}}if(fr.lab)n.lab=fr.lab;if(fr.ref)n.ref=true;if(fr.fijo)n.fijo=fr.fijo;H[d].push(n)}}));
+    m.querySelector('#cAr').onchange=e=>{leer();const [a,g]=e.target.value.split('|');if(a!==fr.ar)fr.lab='';fr.ar=a;if(g){fr.grupo='otro';fr.glab=g}else{fr.grupo='tut';fr.glab='';fr.mis=''}pintar()};
+    m.querySelector('#cDet').addEventListener('change',e=>{if(e.target.id==='cMis'){const v=e.target.value;leer();fr.mis=v==='__otra'?' ':v;pintar();const tt=m.querySelector('#cMisT');if(tt){tt.value='';tt.focus()}}});
+    m.querySelector('#cOk').onclick=()=>{leer();fr.mis=(fr.mis||'').trim();const ds=[...new Set([w,...dias()])];
+      setHorario(H=>ds.forEach(d=>{H[d]=H[d].filter(x=>x.ini!==ini);if(fr.ar){const n={ini,fin:t.fin,ar:fr.ar};if(CURRICULO[fr.ar]&&fr.grupo==='otro'){n.grupo='otro';n.glab=fr.glab;if(fr.mis)n.mis=fr.mis}if(fr.lab)n.lab=fr.lab;if(fr.ref)n.ref=true;if(fr.fijo)n.fijo=fr.fijo;H[d].push(n)}}));
       close();toast(ds.length>1?`Guardado en ${ds.length} días`:'Guardado')};
   });
 }
@@ -463,10 +477,10 @@ function copiarDiaHor(w){modal(`<h3>Copiar el horario del ${DIAS[w]}</h3><p clas
 function plantillaHorario(){setHorario((H,T)=>{T.splice(0,T.length,{ini:'09:00',fin:'09:30'},{ini:'09:30',fin:'10:30'},{ini:'10:30',fin:'11:30'},{ini:'11:30',fin:'12:00'},{ini:'12:00',fin:'13:00'},{ini:'13:00',fin:'14:00'});[1,2,3,4,5].forEach(w=>H[w]=[{ini:'11:30',fin:'12:00',ar:'otro',lab:'Recreo'}])})}
 /* ---- cabecera ---- */
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
-function cabeceraHTML(f){const k=S.config.cabecera||'heroes',t=may1(fLarga(f));
+function cabeceraHTML(f){const k=S.config.cabecera||'acuarela',t=may1(fLarga(f));
   if(k==='ninguna')return `<div class="cabtxt">${esc(t)}</div>`;
   if(k==='propia'&&cabPropia())return `<div class="cab"><div class="cabimg big" style="background-image:url(${cabPropia()})"><span>${esc(t)}</span></div></div>`;
-  return `<div class="cab">${(CABECERAS[k]||CABECERAS.heroes).svg(esc(t))}</div>`}
+  return `<div class="cab">${(CABECERAS[k]||CABECERAS.acuarela).svg(esc(t))}</div>`}
 function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const c=document.createElement('canvas');c.width=1200;c.height=300;const x=c.getContext('2d');const r=Math.max(1200/img.width,300/img.height);const w=img.width*r,h=img.height*r;x.drawImage(img,(1200-w)/2,(300-h)/2,w,h);try{localStorage.setItem('evaluapp-cab',c.toDataURL('image/jpeg',.82));S.config.cabecera='propia';saveConfig();render();toast('Cabecera guardada')}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
 /* ---- sesiones ---- */
 const sesId=(f,i)=>`ses-${f}-${i}`;
@@ -510,7 +524,7 @@ function vDia(){
   if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b><div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
   const notas=S.prog[sesId(f,'n')];
   return nav+acc+`<div class="dpage">${cabeceraHTML(f)}${frs.map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const conCont=CURRICULO[fr.ar]||fr.fijo||!sesVacia(f,i);
-     return `<button class="drow" data-sed="${f}|${i}"><div class="dtop"><span class="dh">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="dar" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span></div>${conCont?`<div class="dcols n${bl.length}">${celdaTxt(f,i)}</div>`:''}</button>`}).join('')}</div>
+     return `<button class="drow" data-sed="${f}|${i}"><div class="dtop"><span class="dh">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="dar" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span></div>${misTxt(fr)?`<div class="dmis">${esc(misTxt(fr))}</div>`:''}${conCont?`<div class="dcols n${bl.length}">${celdaTxt(f,i)}</div>`:''}</button>`}).join('')}</div>
    <div class="card stack" style="margin-top:12px"><h3>Avisos de este día</h3><textarea data-dnota="${f}" placeholder="Salidas, cambios, quién recoge a quién…">${esc(notas?notas.d.notas:'')}</textarea></div>`;
 }
 /* ---- editor de una sesión ---- */
@@ -552,7 +566,7 @@ function bloquesPlan(fechas){
   fechas.forEach(f=>{const frs=franjasDe(f);if(!frs.length)return;
     B.push({k:'h2',t:may1(fLarga(f))});
     const n=S.prog[sesId(f,'n')];if(n&&n.d.notas)B.push({k:'p',t:'Avisos: '+n.d.notas});
-    frs.forEach((fr,i)=>{const {d}=getSes(f,i);B.push({k:'h3',t:`${fr.ini||''}–${fr.fin||''} · ${franjaTit(fr)}${fr.ref?' (con refuerzo)':''}`});
+    frs.forEach((fr,i)=>{const {d}=getSes(f,i);B.push({k:'h3',t:`${fr.ini||''}–${fr.fin||''} · ${franjaTit(fr)}${fr.ref?' (con refuerzo)':''}`});if(misTxt(fr))B.push({k:'p',t:misTxt(fr)});
       const bl=bloquesDe(fr,d);if(!CURRICULO[fr.ar]&&!fr.fijo&&sesVacia(f,i))return;
       bl.forEach(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);
         if(lab||sn)B.push({k:'p',t:`${lab?lab+' — ':''}${sn?`${sn.cod} «${sn.tit}», sesión ${sn.n}${sn.tot?' de '+sn.tot:''}`:''}`.replace(/ — $/,'')});
@@ -580,7 +594,7 @@ function imprimirPlan(fechas){
   const gen=S.config.avisoSust?`<div class="pgen"><b>Indicaciones generales</b>${S.config.avisoSust.split('\n').filter(x=>x.trim()).map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
   el.innerHTML=fechas.filter(f=>franjasDe(f).length).map((f,ix)=>{const n=S.prog[sesId(f,'n')];
     return `<section class="ppage">${cabeceraHTML(f)}${ix===0?gen:''}${n&&n.d.notas?`<div class="pnota"><b>Avisos:</b> ${esc(n.d.notas)}</div>`:''}${franjasDe(f).map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const vacia=!CURRICULO[fr.ar]&&!fr.fijo&&sesVacia(f,i);
-      return `<div class="prow"><div class="ptop"><span class="ph">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="par" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${fr.ref?' ®':''}</span></div>${vacia?'':`<div class="pcols n${bl.length}">${bl.map(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);return `<div class="pcol">${bl.length>1?`<b class="pl">${lab}</b>`:''}${sn?`<div class="pu">${esc(sn.cod)} · sesión ${sn.n}${sn.tot?' de '+sn.tot:''}</div>`:''}${t?`<ul>${t.split('\n').filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${y.mat?`<div class="pm">Materiales: ${esc(y.mat)}</div>`:''}${y.ref?'<div class="pr">REFORZAR</div>':''}</div>`}).join('')}</div>`}</div>`}).join('')}</section>`}).join('');
+      return `<div class="prow"><div class="ptop"><span class="ph">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="par" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${fr.ref?' ®':''}</span></div>${misTxt(fr)?`<div class="pmis">${esc(misTxt(fr))}</div>`:''}${vacia?'':`<div class="pcols n${bl.length}">${bl.map(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);return `<div class="pcol">${bl.length>1?`<b class="pl">${lab}</b>`:''}${sn?`<div class="pu">${esc(sn.cod)} · sesión ${sn.n}${sn.tot?' de '+sn.tot:''}</div>`:''}${t?`<ul>${t.split('\n').filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${y.mat?`<div class="pm">Materiales: ${esc(y.mat)}</div>`:''}${y.ref?'<div class="pr">REFORZAR</div>':''}</div>`}).join('')}</div>`}</div>`}).join('')}</section>`}).join('');
   document.body.classList.add('printing');
   const fin=()=>{document.body.classList.remove('printing');window.removeEventListener('afterprint',fin)};
   window.addEventListener('afterprint',fin);setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},150);
