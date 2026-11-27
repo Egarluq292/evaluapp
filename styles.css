@@ -607,3 +607,23 @@ nav.tabs{background:#121c2c}
 .tiles3.t4 .tbadge{top:8px;max-width:calc(100% - 16px);white-space:normal;text-align:center;line-height:1.2}
 .modal .stack>.btn{width:100%}
 :root{--t-horario:#6b57b8;--a-horario:#c9bdf5;--s-horario:#33295a}
+/* v1.9.2: el PDF del plan se parece a la página del día de la app */
+@media print{
+  @page{size:A4;margin:9mm 0}
+  body.printing #print{padding:0;font-family:Inter,Arial,sans-serif;color:#2a2f37;line-height:1.4}
+  #print .ppage .cab,#print .ppage .cabp{margin:0 0 1mm}
+  #print .prow{margin:0 14mm;padding:2.4mm 0;border-bottom:.3mm solid #d4d0c4}
+  #print .prow:last-child{border-bottom:0}
+  #print .ph{font-size:9.5pt;color:#7a7f88}
+  #print .par{font-size:16pt;line-height:1}
+  #print .pmis{font-size:8.5pt;color:#7a7f88}
+  #print .pcols{margin-top:1.2mm}
+  #print .pcol ul{font-size:10pt;padding-left:4.5mm}
+  #print .pcols.n2 .pcol+.pcol{border-left:.35mm solid #2a2f37;padding-left:4mm}
+  #print .pcols.n2 .pcol:first-child{padding-right:4mm}
+  #print .pl{font-size:8pt;color:#7a7f88}
+  #print .pu,#print .pm,#print .pr{font-size:8.5pt}
+  #print .pgen,#print .pnota{margin:2mm 14mm;font-size:9.5pt}
+  #print .cabp span{font-size:30pt}
+  #print .cabtxt{font-size:30pt;padding:4mm 14mm}
+}

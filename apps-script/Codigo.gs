@@ -1,5 +1,5 @@
 /**
- * Evalúapp · script de la hoja de Google · versión 1.2 (crea planes de clase en Google Docs).
+ * Evalúapp · script de la hoja de Google · versión 1.3 (guarda también tu imagen de cabecera para todos tus dispositivos).
  *
  * Cómo instalarlo (una sola vez):
  * 1. Crea una hoja de cálculo nueva en el Drive de tu cuenta de educaand.
@@ -58,6 +58,8 @@ function doPost(e) {
     if (body.action === 'ping') return salida_({ ok: true });
     if (body.action === 'pull') return salida_(Object.assign({ ok: true }, leerTodo_()));
     if (body.action === 'doc') return salida_(Object.assign({ ok: true }, crearDoc_(body)));
+    if (body.action === 'cabPut') { guardarCab_(String(body.img || '')); return salida_({ ok: true }); }
+    if (body.action === 'cabGet') return salida_({ ok: true, img: leerCab_() });
     if (body.action === 'push') {
       aplicar_(body.ops || []);
       return salida_({ ok: true });
@@ -186,3 +188,21 @@ function autorizarDocumentos() {
   DriveApp.getFileById(d.getId()).setTrashed(true);
   Logger.log('Permisos concedidos. Ya puedes crear planes desde Evalúapp.');
 }
+
+/* ---- Imagen de cabecera del plan (troceada: una celda admite 50 000 caracteres) ---- */
+const HOJA_CAB = 'cabecera';
+function guardarCab_(img) {
+  const h = hoja_(HOJA_CAB);
+  h.clear();
+  if (!img) return;
+  const trozos = [];
+  for (let i = 0; i < img.length; i += 40000) trozos.push([img.slice(i, i + 40000)]);
+  h.getRange(1, 1, trozos.length, 1).setNumberFormat('@').setValues(trozos);
+}
+function leerCab_() {
+  const h = hoja_(HOJA_CAB);
+  const n = h.getLastRow();
+  if (!n) return '';
+  return h.getRange(1, 1, n, 1).getValues().map(v => String(v[0] || '')).join('');
+}
+

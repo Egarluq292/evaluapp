@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.9.1';
+const APP_VERSION='1.9.4';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -439,15 +439,17 @@ function vHorario(){
   const grid=T.length?`<div class="hgrid"><table><thead><tr><th></th>${[1,2,3,4,5].map(w=>`<th><button data-hdia="${w}">${DIAS[w].slice(0,3)}<span>Copiar</span></button></th>`).join('')}</tr></thead><tbody>${T.map(t=>`<tr><td class="hcol"><button data-hslot="${t.ini}">${esc(t.ini)}<span>${esc(t.fin)}</span></button></td>${[1,2,3,4,5].map(w=>{const fr=(H[w]||[]).find(x=>x.ini===t.ini);return `<td><button class="hcell ${fr?'':'vac'}" data-hcel="${w}|${t.ini}" style="--fc:${fr?arCol(fr.ar):'transparent'}">${celda(w,fr)}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`:'';
   return `<div class="note" style="margin-bottom:12px">1. Crea las franjas horarias: valen para toda la semana. 2. Toca cada casilla para elegir qué das; al guardar puedes aplicarlo a varios días a la vez. 3. Toca un día para copiarlo en otros.</div>
    <div class="card" style="margin-bottom:12px"><div class="hhead"><h3>Tu horario</h3><button class="btn sm" data-act="hAddSlot">+ Franja</button></div>${grid||`<div class="empty" style="padding:14px 0"><b>Aún no hay franjas</b><div style="margin-top:10px"><button class="btn pri" data-act="hPlantilla">Crear 09:00 – 14:00 con recreo</button></div></div>`}</div>`+
-  `<div class="card stack" style="margin-bottom:12px"><h3>Cabecera del plan</h3><div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'acuarela')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
-     <button class="cabopt ${S.config.cabecera==='propia'?'on':''}" data-cab="propia">${cabPropia()?`<div class="cabimg" style="background-image:url(${cabPropia()})"></div>`:'<div class="cabimg vacia">Sube una imagen</div>'}<span>Mi imagen</span></button>
-     <button class="cabopt ${S.config.cabecera==='ninguna'?'on':''}" data-cab="ninguna"><div class="cabimg vacia">Sin imagen</div><span>Sin cabecera</span></button></div>
-     <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda solo en este dispositivo. Usa imágenes propias o libres de derechos.</div></div>`+
+  `<div class="card stack" style="margin-bottom:12px"><h3>Cabecera del plan</h3>${cabSelHTML()}</div>`+
   `<div class="card stack"><h3>Indicaciones generales para sustitutos</h3><textarea id="avisoSust" placeholder="Rutinas del aula, dónde están los materiales, normas, a quién acudir…">${esc(S.config.avisoSust||'')}</textarea><div class="small muted">Saldrá al principio de cada plan exportado. No pongas aquí datos personales ni de salud del alumnado.</div></div>`;
 }
 const AB_AREA={mat:'Mates',len:'Lengua',cmn:'C.\u00a0Medio',pla:'Plástica',cmn3:'C.\u00a0Medio',pla3:'Plástica'};
 const hm=t=>{const [h,m]=(t||'0:0').split(':').map(Number);return h*60+m},mh=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
 function franjasT(){if(S.config.franjas&&S.config.franjas.length)return S.config.franjas;const m={};Object.values(S.config.horario||{}).forEach(l=>(l||[]).forEach(fr=>{if(fr.ini&&!m[fr.ini])m[fr.ini]={ini:fr.ini,fin:fr.fin||''}}));return Object.values(m).sort((a,b)=>hm(a.ini)-hm(b.ini))}
+function cabSelHTML(){return `<div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'acuarela')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
+     <button class="cabopt ${S.config.cabecera==='propia'?'on':''}" data-cab="propia">${cabPropia()?`<div class="cabimg" style="background-image:url(${cabPropia()})"></div>`:'<div class="cabimg vacia">Sube una imagen</div>'}<span>Mi imagen</span></button>
+     <button class="cabopt ${S.config.cabecera==='ninguna'?'on':''}" data-cab="ninguna"><div class="cabimg vacia">Sin imagen</div><span>Sin cabecera</span></button></div>
+     <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda en tu hoja de Google y aparece en todos tus dispositivos. Úsala solo para ti: no la publiques si tiene personajes con derechos.</div>`}
+function cabModal(){modal(`<h3>Cabecera del plan</h3><div class="stack">${cabSelHTML()}</div><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Hecho</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const b=e.target.closest('[data-cab]');if(b&&!(b.dataset.cab==='propia'&&!cabPropia()))setTimeout(()=>{m.querySelectorAll('.cabopt').forEach(x=>x.classList.toggle('on',x===b))},0)})})}
 function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);const T=JSON.parse(JSON.stringify(franjasT()));fn(H,T);T.sort((a,b)=>hm(a.ini)-hm(b.ini));[1,2,3,4,5].forEach(w=>{H[w]=H[w].map(normFr).filter(fr=>T.some(t=>t.ini===fr.ini)).map(fr=>Object.assign(fr,{fin:T.find(t=>t.ini===fr.ini).fin})).sort((a,b)=>hm(a.ini)-hm(b.ini))});S.config.horario=H;S.config.franjas=T;saveConfig();render()}
 const DCHK=(sel,fijo)=>`<div class="dchk">${[1,2,3,4,5].map(w=>`<button class="tchip ${sel.includes(w)?'on':''}" data-w="${w}" ${w===fijo?'disabled':''}>${DIAS[w].slice(0,3)}</button>`).join('')}<button class="tchip" data-w="todos">Toda la semana</button></div>`;
 function dchkMount(m){m.querySelector('.dchk').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;if(b.dataset.w==='todos'){m.querySelectorAll('.dchk [data-w]:not([data-w="todos"])').forEach(x=>x.classList.add('on'));return}b.classList.toggle('on')});return ()=>[...m.querySelectorAll('.dchk .on[data-w]')].map(b=>+b.dataset.w).filter(Boolean)}
@@ -493,12 +495,20 @@ function moverSesiones(a,b){const hb='-h'+b.replace(':','');Object.values(S.prog
 function copiarDiaHor(w){modal(`<h3>Copiar el horario del ${DIAS[w]}</h3><p class="small muted" style="margin-top:-6px">Sustituye el horario de los días que marques.</p>${DCHK([],w)}<div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="dOk">Copiar</button></div>`,(m,close)=>{const dias=dchkMount(m);m.querySelector('#dOk').onclick=()=>{const ds=dias().filter(d=>d!==w);if(!ds.length){toast('Marca algún día');return}setHorario(H=>ds.forEach(d=>H[d]=JSON.parse(JSON.stringify(H[w]))));close();toast(`Copiado en ${ds.length} ${ds.length===1?'día':'días'}`)}})}
 function plantillaHorario(){setHorario((H,T)=>{T.splice(0,T.length,{ini:'09:00',fin:'09:30'},{ini:'09:30',fin:'10:30'},{ini:'10:30',fin:'11:30'},{ini:'11:30',fin:'12:00'},{ini:'12:00',fin:'13:00'},{ini:'13:00',fin:'14:00'});[1,2,3,4,5].forEach(w=>H[w]=[{ini:'11:30',fin:'12:00',ar:'otro',lab:'Recreo'}])})}
 /* ---- cabecera ---- */
+async function subirCabRemota(d){if(!Sync.ok()){toast('Cabecera guardada en este dispositivo. Conecta la hoja para tenerla en todos.');return}
+  try{await Sync.call({action:'cabPut',img:d});const v=String(Date.now());S.config.cabVer=v;saveConfig();try{localStorage.setItem('evaluapp-cab-ver',v)}catch(e){}toast('Cabecera guardada en todos tus dispositivos')}
+  catch(e){toast(/desconocida/i.test(e.message)?'Guardada solo aquí: actualiza el script de la hoja (versión 1.3) para tenerla en todos tus dispositivos.':'Guardada aquí; no se pudo subir a la hoja: '+e.message)}}
+let _cabPedida=false;
+async function cargarCabRemota(){let vl='';try{vl=localStorage.getItem('evaluapp-cab-ver')||''}catch(e){}
+  if(!_cabPedida&&S.config.cabecera==='propia'&&cabPropia()&&!S.config.cabVer&&Sync.ok()&&SYNCST[0]==='ok'){_cabPedida=true;subirCabRemota(cabPropia());return}
+  if(_cabPedida||S.config.cabecera!=='propia'||!Sync.ok()||(cabPropia()&&(!S.config.cabVer||vl===S.config.cabVer)))return;_cabPedida=true;
+  try{const j=await Sync.call({action:'cabGet'});if(j&&j.img){localStorage.setItem('evaluapp-cab',j.img);if(S.config.cabVer)localStorage.setItem('evaluapp-cab-ver',S.config.cabVer);render()}}catch(e){}}
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
 function cabeceraHTML(f){const k=S.config.cabecera||'acuarela',t=may1(fLarga(f));
   if(k==='ninguna')return `<div class="cabtxt">${esc(t)}</div>`;
   if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt=""><span>${esc(t)}</span></div>`;
   return `<div class="cab">${(CABECERAS[k]||CABECERAS.acuarela).svg(esc(t))}</div>`}
-function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const r=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1400000&&q>.4){q-=.1;d=c.toDataURL('image/jpeg',q)}try{localStorage.setItem('evaluapp-cab',d);S.config.cabecera='propia';saveConfig();render();toast('Cabecera guardada')}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
+function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const r=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1400000&&q>.4){q-=.1;d=c.toDataURL('image/jpeg',q)}try{localStorage.setItem('evaluapp-cab',d);S.config.cabecera='propia';saveConfig();render();subirCabRemota(d)}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
 /* ---- sesiones ---- */
 const sesId=(f,i)=>`ses-${f}-${i}`;
 const BLK0=()=>({ud:'',act:'',mat:'',est:'',ref:false,mov:''});
@@ -537,7 +547,7 @@ function vSemana(){
 function vDia(){
   const f=UI.pfecha,frs=franjasDe(f),w=new Date(f+'T12:00:00').getDay();
   const nav=`<div class="daynav"><button class="iconbtn" data-pday="-1" aria-label="Día anterior" style="transform:rotate(180deg)">${ICONS.chev}</button><div><input type="date" id="pfecha" value="${f}"></div><button class="iconbtn" data-pday="1" aria-label="Día siguiente">${ICONS.chev}</button></div>`;
-  const acc=`<div class="g3b" style="margin:12px 0"><button class="btn sm" data-psemde="${f}">${ICONS.cal} Semana</button><button class="btn sm" data-act="copDia">${ICONS.copy} Copiar otro día</button><button class="btn sm pri" data-act="expDia">Exportar</button></div>`;
+  const acc=`<div class="g2b" style="margin:12px 0"><button class="btn sm" data-psemde="${f}">${ICONS.cal} Semana</button><button class="btn sm" data-act="copDia">${ICONS.copy} Copiar otro día</button><button class="btn sm" data-act="cabMod">${ICONS.pen} Cabecera</button><button class="btn sm pri" data-act="expDia">Exportar</button></div>`;
   if(w===0||w===6)return nav+`<div class="card empty"><b>Fin de semana</b>Elige un día lectivo.</div>`;
   if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b><div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
   const notas=S.prog[sesId(f,'n')];
@@ -870,6 +880,7 @@ function render(){
   const act=document.activeElement;if(act&&(['alNom','syUrl','syKey'].includes(act.id)||(act.closest&&act.closest('#view')&&(act.tagName==='TEXTAREA'||(act.tagName==='INPUT'&&act.type==='text')))))return;
   renderChrome();setHTML('view',VIEWS[UI.tab]());
   document.body.dataset.tab=UI.tab;
+  if(typeof cargarCabRemota==='function')cargarCabRemota();
 }
 function cellModal(a,c){
   const al=S.config.alumnos.find(x=>x.id===a),cr=CRIT[c];
@@ -956,6 +967,7 @@ document.addEventListener('click',e=>{
     case 'hPlantilla':plantillaHorario();break;
     case 'copSem':copSemana();break;
     case 'copDia':copDiaModal();break;
+    case 'cabMod':cabModal();break;
     case 'prox':toast('Programación llegará en la próxima versión');break;
     case 'demo':demo();break;
     case 'informe':copiar(informeTexto(S.config.alumnos.find(a=>a.id===UI.alumno)));break;
@@ -1173,6 +1185,7 @@ function vInicio19(){
    <div class="tiles3 t4">${['horario','evaluar','alumnado','prog'].map(k=>`<button class="tile3" data-tab="${k}" style="--ts:var(--t-${k})">${live[k]?`<span class="tbadge">${esc(live[k])}</span>`:''}${ICONS[k]}<b>${SECS[k].n}</b><span>${TILESUB[k]}</span></button>`).join('')}</div>`;
 }
 Object.assign(VIEWS,{inicio:vInicio19,evaluar:vEvaluar19,alumnado:vAlumnado,horario:vHorarioVer});
+const _vAjustesBase=VIEWS.ajustes;VIEWS.ajustes=()=>_vAjustesBase()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.pen,'var(--a-prog)','Cabecera del plan','La imagen del plan del día y del PDF','data-act="cabMod"')}</div>`;
 
 /* ---- historial del cell modal: notas de actividad ---- */
 function histTxt(r){if(r.t==='nac'){const d=nacD(r),p=S.prog[d.act];return `<span class="tag" style="background:${TRC[(+d.n||1)-1]};color:#10202a">${TRAMOS[(+d.n||1)-1]} · ${String(notaReg(r)).replace('.',',')}</span> ${p?esc(p.d.titulo):''}`}
@@ -1220,3 +1233,4 @@ document.addEventListener('click',e=>{
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
+setTimeout(cargarCabRemota,1500);
