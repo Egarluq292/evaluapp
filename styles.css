@@ -828,3 +828,39 @@ html.claro .pills{background:#e8ebf4;border:0}
   .dacts{padding:0 12px 9px}.dacts .achip{font-size:11px;padding:4px 7px}
 }
 .cabencl{line-height:1.3;margin:2px 0 10px}
+/* ===================== v2.2 · Inicio A, barra de áreas y Alumnado ===================== */
+.dskonly{display:none}@media(min-width:900px){.dskonly{display:inline-flex}}
+.wk.vivo .hk{background:linear-gradient(155deg,color-mix(in srgb,var(--c) 78%,#fff) 0%,var(--c) 60%,color-mix(in srgb,var(--c) 80%,#000) 100%);border:0;color:#fff;box-shadow:0 4px 10px color-mix(in srgb,var(--c) 32%,transparent),inset 0 1px 0 rgba(255,255,255,.3)}
+.wk.vivo .hk .hkn,.wk.vivo .hk b{color:#fff}.wk.vivo .hk .hkg,.wk.vivo .hk .hkt{color:rgba(255,255,255,.88)}
+.wk.vivo .hk.hoy{outline:2.5px solid #5b63e8;outline-offset:1px}
+.wk.vivo .hk .achip{background:rgba(255,255,255,.96);color:#1f2640;border:0}
+.avrow{display:grid;gap:12px;margin-bottom:12px}@media(min-width:900px){.avrow{grid-template-columns:1fr 1fr;align-items:start}}
+.avb{border-radius:18px;padding:14px;color:#fff;margin-bottom:12px;background:linear-gradient(155deg,color-mix(in srgb,var(--t) 78%,#fff) 0%,var(--t) 50%,color-mix(in srgb,var(--t) 75%,#000) 100%);box-shadow:0 10px 22px color-mix(in srgb,var(--t) 30%,transparent)}
+.avrow .avb{margin-bottom:0}
+.avh{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.avh b{font-size:16px;font-weight:800}.avh small{font-size:11.5px;font-weight:800;background:rgba(0,0,0,.22);padding:3px 9px;border-radius:99px}
+.avl{display:flex;flex-direction:column;gap:6px}
+.avl button{display:flex;flex-wrap:wrap;align-items:center;gap:5px;border:0;text-align:left;background:rgba(255,255,255,.96);color:#1f2640;border-radius:11px;padding:9px 11px;font:500 13px Inter,sans-serif;cursor:pointer}
+.avl button>b{margin-right:auto}.avl button>span{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}.avl button>small{width:100%;color:#6f7893;font-size:11.5px}
+.avv{margin:0;font-size:13px;color:rgba(255,255,255,.92)}
+.apill{font-size:11px;font-weight:700;color:var(--c);background:color-mix(in srgb,var(--c) 14%,#fff);border-radius:99px;padding:2px 8px;white-space:nowrap}
+.hsp{display:flex;justify-content:space-between;align-items:center}
+.lnk{border:0;background:none;color:var(--pri,#5b63e8);font:700 13px Inter,sans-serif;display:inline-flex;align-items:center;gap:2px;cursor:pointer}.lnk svg{width:14px;height:14px}
+.mdw{overflow-x:auto}
+.md2{width:100%;border-collapse:collapse}.md2 th{font-size:11.5px;font-weight:800;padding:0 2px 8px;text-align:center}
+.md2 td{padding:3px 2px;text-align:center}.md2 td.al{text-align:left;white-space:nowrap;padding-right:8px}.md2 td.al b{font-size:13.5px}.md2 td.al small{color:var(--muted);margin-left:5px;font-size:11px}
+.md2 tr[data-veral]{cursor:pointer}.md2 tr[data-veral]:hover td{background:color-mix(in srgb,var(--pri,#5b63e8) 5%,transparent)}
+.md2 .nb{min-width:40px;padding:5px 4px;font-size:12.5px}
+@media(max-width:420px){.md2 .nb{min-width:34px;font-size:12px;padding:4px 2px}.md2 th{font-size:10.5px}.md2 td.al b{font-size:12.5px}}
+.arbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 12px}
+.arbar button{border:1.5px solid color-mix(in srgb,var(--c) 40%,transparent);background:color-mix(in srgb,var(--c) 8%,var(--card));color:var(--c);font:700 12.5px Inter,sans-serif;border-radius:99px;padding:6px 12px;cursor:pointer}
+.arbar button.on{background:var(--c);color:#fff;border-color:var(--c)}
+.arsep{font-size:11.5px;font-weight:700;color:var(--muted);margin-left:6px}
+.pills.grp{margin-bottom:12px}
+.alres{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.alres button{display:flex;align-items:center;gap:8px;border:1.5px solid color-mix(in srgb,var(--c) 35%,transparent);background:var(--card);border-radius:12px;padding:5px 6px 5px 11px;font:700 12.5px Inter,sans-serif;color:var(--c);cursor:pointer}
+.alres button.on{border-color:var(--c);box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 25%,transparent)}
+.alres .nb{min-width:38px;padding:4px;font-size:12.5px}
+@media(max-width:899px){.pinicio{display:none}.wk.vivo{margin-top:14px}}
+.avl .avmas{justify-content:center;background:rgba(255,255,255,.22);color:#fff;font-weight:700}
+html.claro .stucard{background:#fff;border:1px solid var(--line);box-shadow:0 2px 10px rgba(30,40,80,.06)}
+html.claro .stucard .lt b{color:var(--ink)}html.claro .stucard .lt span{color:var(--muted)}

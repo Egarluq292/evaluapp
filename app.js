@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.1.1';
+const APP_VERSION='2.2.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1273,7 +1273,7 @@ NAV13.splice(0,NAV13.length,'inicio','evaluar','prog','alumnado','seneca','aviso
 const NAV_PRI=['inicio','evaluar','prog','alumnado'];
 const TRF=['#fde0e3','#ffeadf','#e2f5e7','#e2eafe','#d6f2f6'],TRT=['#c2333f','#bf5f2c','#2b8546','#3757c3','#137d90'];
 const tramoDe=n=>n==null?0:n<3?1:n<5?2:n<7?3:n<9?4:5;
-const chipN=(n,extra='')=>n==null?`<span class="nb nb0 ${extra}">–</span>`:`<span class="nb nb${tramoDe(n)} ${extra}">${(Math.round(n*10)/10).toString().replace('.',',')}</span>`;
+const chipN=(n,extra='')=>n==null?`<span class="nb nb0 ${extra}">–</span>`:`<span class="nb nb${tramoDe(n)} ${extra}">${((n<5?Math.floor(n*10):Math.round(n*10))/10).toFixed(1).replace('.',',')}</span>`;
 const esMovil=()=>window.innerWidth<900;
 let _rsz;window.addEventListener('resize',()=>{clearTimeout(_rsz);_rsz=setTimeout(()=>{const m=esMovil();if(m!==window.__mov){window.__mov=m;render()}},150)});window.__mov=esMovil();
 function saludo(){const h=new Date().getHours();return h<14?'Buenos días':h<21?'Buenas tardes':'Buenas noches'}
@@ -1421,6 +1421,84 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-isem],[dat
   if(d.isem!==undefined){UI.isem=+d.isem===0?lunesDe(today()):addDias(UI.isem,+d.isem);render();return}
   if(d.hkd){const [f]=d.hkd.split('|');try{history.pushState({evt:1},'')}catch(err){}UI.tab='prog';UI.ptab='dia';UI.pfecha=f;render();scrollTo(0,0);const ini=d.hkd.split('|')[1];if(ini)setTimeout(()=>{const i=franjasDe(f).findIndex(x=>x.ini===ini);const el=document.querySelector(`.drow[data-sed="${f}|${i}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}},80)}},true);
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.hk[data-hkd]')){e.preventDefault();e.target.click()}});
+
+
+/* ===================== v2.2 · sin «área activa»: todo de un vistazo ===================== */
+const AR_TUT=Object.keys(CURRICULO).filter(a=>!CURRICULO[a].g),AR_CIC=Object.keys(CURRICULO).filter(a=>CURRICULO[a].g);
+const abA=a=>(AB_AREA[a]||areaN(a)).replace(/ /g,' ');
+/* calcula algo «como si» estuviera elegida otra área, sin cambiar lo que ves */
+function conArea(a,fn){const prev=UI.area;if(a===prev)return fn();setArea(a);UI.area=a;try{return fn()}finally{setArea(prev);UI.area=prev}}
+function cambiarArea(a){if(!CURRICULO[a]||a===UI.area)return;UI.area=a;setArea(a);try{localStorage.setItem('evaluapp-area',a)}catch(e){}}
+const alsGrupo=ars=>{const cs=new Set(ars.flatMap(a=>CURS(a)));return alumnosOrd().filter(al=>cs.has(al.curso))};
+/* medias de cada alumno en cada área del periodo */
+function mediasPor(ars){const M={};ars.forEach(a=>conArea(a,()=>{const regs=periodRegs();alumnosArea().forEach(al=>{(M[al.id]=M[al.id]||{})[a]=mediaAl(al,regs)})}));return M}
+function refuerzoDe(ars){const M=mediasPor(ars);return alsGrupo(ars).map(al=>({al,l:ars.filter(a=>M[al.id]&&M[al.id][a]!=null&&M[al.id][a]<5).map(a=>[a,M[al.id][a]])})).filter(x=>x.l.length)}
+/* actividades ya hechas (fecha pasada o de hoy) con notas por poner, de todas las áreas */
+function sinCalificar(){const hoy=today();return Object.values(S.prog).filter(p=>p.t==='act'&&p.f<=hoy&&inPeriod(p.f)&&CURRICULO[p.ar]).map(p=>conArea(p.ar,()=>{const ns=notasAct(p);const pend=alsAct(p).filter(al=>critsAct(p,al).some(c=>!ns.some(r=>r.a===al.id&&r.c===c))).length;return {p,pend,tot:alsAct(p).length}})).filter(x=>x.pend>0).sort((a,b)=>b.p.f.localeCompare(a.p.f))}
+const nf1=v=>(v<5?Math.floor(v*10)/10:Math.round(v*10)/10).toFixed(1).replace('.',',');
+const pillA=(a,v)=>`<span class="apill" style="--c:${arCol(a)}">${esc(abA(a))}${v!=null?' '+nf1(v):''}</span>`;
+function tablaMedias(ars){const als=alsGrupo(ars),M=mediasPor(ars);if(!als.length)return '<p class="muted small">Añade a tus alumnos en Ajustes.</p>';
+  return `<div class="mdw"><table class="md2"><thead><tr><th></th>${ars.map(a=>`<th style="color:${arCol(a)}">${esc(abA(a))}</th>`).join('')}</tr></thead><tbody>${als.map(al=>`<tr data-veral="${al.id}" tabindex="0"><td class="al"><b>${esc(al.nombre)}</b><small>${al.curso}.º</small></td>${ars.map(a=>`<td>${CURS(a).includes(al.curso)?chipN(M[al.id]&&M[al.id][a]):'<span class="nb nbx">·</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}
+function bloquesAvisoInicio(){
+  const R=refuerzoDe(AR_TUT),C=sinCalificar();
+  const ref=`<div class="avb" style="--t:#e5484d"><div class="avh"><b>Necesitan refuerzo</b><small>${R.length?R.length+' '+(R.length===1?'alumno':'alumnos'):'nadie'}</small></div>${R.length?`<div class="avl">${R.map(({al,l})=>`<button data-veral="${al.id}"><b>${esc(al.nombre)}</b><span>${l.map(([a,v])=>pillA(a,v)).join('')}</span></button>`).join('')}</div>`:'<p class="avv">Ningún alumno de tu tutoría tiene media por debajo de 5 en este periodo.</p>'}</div>`;
+  const cal=`<div class="avb" style="--t:#3b6fd8"><div class="avh"><b>Sin calificar</b><small>${C.length?C.length+' '+(C.length===1?'actividad':'actividades'):'al día'}</small></div>${C.length?`<div class="avl">${C.slice(0,4).map(({p,pend})=>`<button data-actab="${p.id}"><b>${esc(p.d.titulo)}</b><span>${pillA(p.ar)}</span><small>${fmtF(p.f)} · ${pend} ${pend===1?'alumno pendiente':'alumnos pendientes'}</small></button>`).join('')}${C.length>4?`<button class="avmas" data-tab="evaluar">Ver las ${C.length} en el Cuaderno</button>`:''}</div>`:'<p class="avv">Todas las actividades hechas tienen sus notas.</p>'}</div>`;
+  return `<div class="avrow">${ref}${cal}</div>`}
+function vInicio22(){
+  const hoy=today();
+  return '<div class="pinicio">'+ptitle(saludo()+(S.config.nombre?', '+esc(S.config.nombre):''),`${may1(fLarga(hoy))} · ${triTxt(UI.tri)}`,`<button class="btn pri2" data-act="quick">${ICONS.plus} Evaluar o anotar</button>`)+'</div>'
+   +semanaInicio().replace('class="card pad wk"','class="card pad wk vivo"')
+   +bloquesAvisoInicio()
+   +`<div class="card pad"><div class="h3 hsp">Medias de tu tutoría <button class="lnk" data-tab="alumnado">Ver alumnado ${ICONS.chev}</button></div>${tablaMedias(AR_TUT)}</div>`}
+VIEWS.inicio=vInicio22;
+
+/* barra de áreas dentro de las pantallas que la necesitan (ya no es un modo global) */
+function areaBar(ars){ars=ars||[...AR_TUT,...AR_CIC];const t=ars.filter(a=>AR_TUT.includes(a)),c=ars.filter(a=>AR_CIC.includes(a));
+  const b=a=>`<button class="${a===UI.area?'on':''}" data-setar="${a}" style="--c:${arCol(a)}">${esc(abA(a))}</button>`;
+  return `<div class="arbar">${t.map(b).join('')}${c.length?`<span class="arsep">3.<sup>er</sup> ciclo</span>${c.map(b).join('')}`:''}</div>`}
+const conBarra=(h,ars)=>{const i=h.indexOf('<div class="tabs2">');return i<0?areaBar(ars)+h:h.slice(0,i)+areaBar(ars)+h.slice(i)};
+{const _ev=VIEWS.evaluar;VIEWS.evaluar=()=>{const h=_ev();return UI.act?h:conBarra(h)}}
+{const _pr=VIEWS.prog;VIEWS.prog=()=>{const h=_pr();if(!['uds','tri'].includes(UI.ptab))return h.replace(/<div class="psub">[^<]*(<sup>[^<]*<\/sup>[^<]*)?· /,'<div class="psub">');const j=h.indexOf('</div>',h.indexOf('<div class="tabs2">'));const k=h.indexOf('</div>',j+6);return h.slice(0,k+6)+areaBar()+h.slice(k+6)}}
+
+/* Alumnado: resumen de todas las áreas, criterios por área y ficha del alumno */
+UI.alnTab='res';UI.alnGrp='tut';
+function vAlumnado22(){
+  if(!['res','mapa','al'].includes(UI.alnTab))UI.alnTab='res';
+  const ars=UI.alnGrp==='cic'?AR_CIC:AR_TUT;
+  const head=ptitle('Alumnado',`${UI.alnGrp==='cic'?'3.<sup>er</sup> ciclo':'Tutoría'} · ${triTxt(UI.tri)}`)+`<div class="tabs2">${pills('alntab',UI.alnTab,[['res','Resumen'],['mapa','Por criterios'],['al','Alumno']])}</div>`;
+  if(UI.alnTab==='res'){const R=refuerzoDe(ars);
+    return head+`<div class="pills grp">${[['tut','Tutoría'],['cic','3.<sup>er</sup> ciclo']].map(([k,n])=>`<button data-alngrp="${k}" class="${UI.alnGrp===k?'on':''}">${n}</button>`).join('')}</div>`
+     +`<div class="card pad"><div class="h3">Medias por área</div>${tablaMedias(ars)}<p class="small muted" style="margin-top:8px">Toca un alumno para ver su ficha.</p></div>`
+     +`<div class="avb" style="--t:#e5484d"><div class="avh"><b>Necesitan refuerzo</b><small>${R.length||'nadie'}</small></div>${R.length?`<div class="avl">${R.map(({al,l})=>`<button data-veral="${al.id}"><b>${esc(al.nombre)}</b><span>${l.map(([a,v])=>pillA(a,v)).join('')}</span></button>`).join('')}</div>`:'<p class="avv">Nadie tiene media por debajo de 5 en este periodo.</p>'}</div>`}
+  if(UI.alnTab==='mapa'){UI.clTab='mapa';let h=vClase13().replace(/^<h2>Clase<\/h2>/,'');h=h.replace(pills('cltab',UI.clTab,[['mapa','Mapa de calor'],['ref','Refuerzo']]),'');return head+areaBar()+h}
+  const al=alumnosOrd().find(a=>a.id===UI.alumno);
+  const misAr=al?[...AR_TUT,...AR_CIC].filter(a=>CURS(a).includes(al.curso)):[];
+  if(al&&!misAr.includes(UI.area)&&misAr.length){cambiarArea(misAr[0])}
+  let resumen='';if(al){const M=mediasPor(misAr);resumen=`<div class="alres">${misAr.map(a=>`<button data-setar="${a}" class="${a===UI.area?'on':''}" style="--c:${arCol(a)}"><span>${esc(abA(a))}</span>${chipN(M[al.id]&&M[al.id][a])}</button>`).join('')}</div>`}
+  return head+resumen+vAlumno13().replace(/^<h2>Alumno<\/h2>/,'').replace(ctxRow({curso:true}),'')}
+VIEWS.alumnado=vAlumnado22;
+
+/* clics nuevos */
+document.addEventListener('click',e=>{const t=e.target.closest('[data-setar],[data-alngrp]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();
+  if(t.dataset.setar){cambiarArea(t.dataset.setar);render();return}
+  if(t.dataset.alngrp){UI.alnGrp=t.dataset.alngrp;render()}},true);
+/* al abrir un alumno, ir a un área que tenga su curso */
+document.addEventListener('click',e=>{const t=e.target.closest('[data-veral]');if(!t)return;const al=alumnosOrd().find(a=>a.id===t.dataset.veral);if(al&&!CURS(UI.area).includes(al.curso)){const a=[...AR_TUT,...AR_CIC].find(x=>CURS(x).includes(al.curso));if(a)cambiarArea(a)}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.matches&&e.target.matches('tr[data-veral]'))e.target.click()});
+
+/* cabecera: ya sin área; solo el periodo */
+{const _rc=renderChrome;renderChrome=function(){_rc();const tri=`${triTxt(UI.tri)}`;
+  const m=document.querySelector('#top .mctx span');if(m)m.innerHTML=`${tri} ${ICONS.down}`;
+  const c=document.querySelector('#side .ctxcard');if(c)c.innerHTML=`<b>${tri}</b><span>Cambiar periodo</span>${ICONS.down}`}}
+ctxModal=function(){modal(`<h3>Periodo</h3><div class="seg" id="cTri">${TRI_N.map((n,i)=>`<button data-v="${i}" class="${UI.tri===i?'on':''}">${n}</button>`).join('')}</div><div class="btns" style="justify-content:flex-end;margin-top:16px"><button class="btn pri" data-close>Hecho</button></div>`,(m)=>{m.addEventListener('click',e=>{const sb=e.target.closest('.seg button');if(!sb)return;m.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b===sb));UI.tri=+sb.dataset.v;render()})})};
+
+/* avisos de todas las áreas: un aviso de refuerzo por alumno con sus áreas */
+{const _ad=avisosData;avisosData=function(){const out=[],vistos=new Set(),ref={};
+  [...AR_TUT,...AR_CIC].forEach(a=>conArea(a,()=>_ad().forEach(x=>{
+    if(/necesita refuerzo/.test(x.t))return;
+    if(/sin evaluar$/.test(x.t))return;const k=x.t+'|'+x.s;if(vistos.has(k))return;vistos.add(k);out.push(x)})));
+  const R=[...refuerzoDe(AR_TUT),...refuerzoDe(AR_CIC)].map(({al,l})=>({ic:'alert',c:'var(--l1)',t:`${esc(al.nombre)} necesita refuerzo`,s:l.map(([a,v])=>`${esc(abA(a))} ${nf1(v)}`).join(' · '),a:`data-veral="${al.id}"`}));
+  return [...R,...out]}}
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
