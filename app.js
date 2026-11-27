@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.5.1';
+const APP_VERSION='2.6.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1123,11 +1123,11 @@ function actModal(id,fecha,opts={}){
    <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${[...cs.map(c=>[c,c+'.º']),['ambos','Ambos']].map(([k,n])=>`<button type="button" data-v="${k}" class="${d.curso===k?'on':''}">${n}</button>`).join('')}</div></div></div><div class="field"><label>Clase en la que la haces <span class="muted small">(puede ser de otra área)</span></label><select id="aH"></select></div>
    ${udOpts.length?`<div class="field"><label>Unidad o situación (opcional)</label><div class="erow"><select id="aU"><option value="">Ninguna</option>${udOpts.map(u=>`<option value="${u.id}" ${d.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select><button type="button" class="btn sm" id="aUc">Usar sus criterios</button></div></div>`:''}
    <div class="field"><label>Criterios que evalúa <span class="muted small" id="aN"></span></label><div id="aL" class="clist">${lista()}</div></div>
-   <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?'<button class="btn danger" id="aDel">Borrar</button>':'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
+   <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?`<span class="btns"><button class="btn danger" id="aDel">Borrar</button>${notasAct(p0).length?`<button class="btn danger g" id="aDelN">Borrar notas (${notasAct(p0).length})</button>`:''}</span>`:'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
     let hIni=opts.ini||d.ini||'';
     const horas=()=>{const fv=m.querySelector('#aF').value;const L=franjasDe(fv);const sel=m.querySelector('#aH');
-      const def=hIni&&L.some(x=>x.ini===hIni)?hIni:((L.find(x=>x.ar===UI.area)||L[0]||{}).ini||'');
-      sel.innerHTML=L.length?L.map(x=>`<option value="${x.ini}" ${x.ini===def?'selected':''}>${x.ini}–${x.fin} · ${esc(nomFranja(x))}</option>`).join(''):`<option value="">No tienes clase ese día</option>`;};
+      const def=hIni&&L.some(x=>x.ini===hIni)?hIni:((L.find(x=>x.ar===UI.area)||{}).ini||'');
+      sel.innerHTML=`<option value="" ${def?'':'selected'}>${L.length?'Sin clase asignada':'No tienes clase ese día'}</option>`+L.map(x=>`<option value="${x.ini}" ${x.ini===def?'selected':''}>${x.ini}–${x.fin} · ${esc(nomFranja(x))}</option>`).join('');};
     horas();m.querySelector('#aF').addEventListener('change',()=>{hIni='';horas()});
     const cnt=()=>{const n=m.querySelectorAll('#aL input:checked').length;m.querySelector('#aN').textContent=n?`(${n})`:''};cnt();
     m.querySelector('#aL').addEventListener('change',cnt);
@@ -1139,6 +1139,9 @@ function actModal(id,fecha,opts={}){
       const pid=p0?p0.id:uid();saveProg({id:pid,t:'act',ar:UI.area,f:nf,d:nd});
       if(p0&&nf!==p0.f)notasAct(p0).forEach(r=>{const nr=Object.assign({},r,{f:nf});putReg(nr);enqueue({op:'up',r:nr})});
       close();abrirAct(pid);toast('Actividad guardada')};
+    const dn=m.querySelector('#aDelN');if(dn)dn.onclick=()=>{const L=notasAct(p0).map(r=>Object.assign({},r));close();
+      confirmar(`¿Borrar las ${L.length} notas de «${d.titulo}»? La actividad y sus criterios se mantienen. Las notas que ya pasaste a Séneca siguen allí.`,'Borrar notas',()=>{L.forEach(r=>delReg(r.id));render();
+        deshacer(`${L.length} notas borradas`,()=>{L.forEach(r=>{putReg(r);enqueue({op:'up',r})});render();toast('Notas recuperadas')})})};
     const del=m.querySelector('#aDel');if(del)del.onclick=()=>{const nn=notasAct(p0).length;close();confirmar(`¿Borrar «${d.titulo}»${nn?` y sus ${nn} notas`:''}?`,'Borrar',()=>{notasAct(p0).forEach(r=>delReg(r.id));delProg(p0.id);UI.act=null;render();toast('Actividad borrada')})};
   });
 }
@@ -1658,6 +1661,12 @@ function nombreModal(){modal(`<h3>Tu nombre</h3><p class="small muted" style="ma
 document.addEventListener('click',e=>{const t=e.target.closest('[data-act2="nombre"]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();nombreModal()},true);
 /* sin nombre: al tocar el saludo de Inicio se puede poner */
 document.addEventListener('click',e=>{if(UI.tab!=='inicio'||S.config.nombre)return;const b=e.target.closest('#top .mtop2.ini .mctx b');if(!b)return;e.preventDefault();e.stopImmediatePropagation();nombreModal()},true);
+
+
+/* ===================== v2.6 · aviso con «Deshacer» ===================== */
+function deshacer(txt,fn){let el=document.getElementById('undo');if(!el){el=document.createElement('div');el.id='undo';document.body.appendChild(el)}
+  el.innerHTML=`<span>${esc(txt)}</span><button type="button">Deshacer</button>`;el.classList.add('show');clearTimeout(deshacer._t);
+  el.querySelector('button').onclick=()=>{el.classList.remove('show');clearTimeout(deshacer._t);fn()};deshacer._t=setTimeout(()=>el.classList.remove('show'),8000)}
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a)UI.area=a}catch(e){}construirAreas();if(!AREAS.some(x=>x.id===UI.area))UI.area=(AREAS[0]||{id:'mat'}).id;setArea(UI.area);if(!CAT&&cfgAreas().some(a=>!AR_STATIC.includes(a.id)))cargarCatalogo().then(()=>{construirAreas();render()}).catch(()=>{});UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();

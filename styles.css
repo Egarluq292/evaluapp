@@ -918,3 +918,8 @@ html.claro .pills button.on{background:#fff;color:var(--ink)}
 /* v2.5.1 · mismo icono en todas las pantallas y saludo más contenido */
 .mtop2 img,.mtop2.ini img{width:50px;height:50px;border-radius:13px;box-shadow:none}
 .mtop2.ini .mctx b{font-size:17px;line-height:1.2}
+/* v2.6 · aviso con deshacer */
+#undo{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:300;display:flex;align-items:center;gap:14px;background:#1f2640;color:#fff;border-radius:14px;padding:10px 10px 10px 16px;font:600 14px Inter,sans-serif;box-shadow:0 10px 26px rgba(15,20,40,.3);transition:.2s;white-space:nowrap}
+#undo.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#undo button{border:0;background:#ff5f6d;color:#fff;font:800 13.5px Inter,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer}
+@media(min-width:900px){#undo{bottom:28px}}
