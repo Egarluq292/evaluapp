@@ -641,3 +641,4 @@ nav.tabs{background:#121c2c}
 }
 .cabn{aspect-ratio:auto}.cabn .cabtx{position:static;display:block;height:auto;aspect-ratio:3.8/1}
 @media print{#print .cabn .cabtx{height:34mm;width:100%;aspect-ratio:auto}}
+.cabp img{object-position:50% 0%}
