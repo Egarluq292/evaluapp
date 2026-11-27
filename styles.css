@@ -864,3 +864,7 @@ html.claro .pills{background:#e8ebf4;border:0}
 .avl .avmas{justify-content:center;background:rgba(255,255,255,.22);color:#fff;font-weight:700}
 html.claro .stucard{background:#fff;border:1px solid var(--line);box-shadow:0 2px 10px rgba(30,40,80,.06)}
 html.claro .stucard .lt b{color:var(--ink)}html.claro .stucard .lt span{color:var(--muted)}
+/* v2.2.1 · el alto de cada clase va en proporción a su duración (30 min = medio alto) */
+.hk{min-height:calc(74px * var(--hh,1))}
+.wk .hk[style*="--hh:0.5"]{padding-top:5px;padding-bottom:4px}
+@media(max-width:899px){.hk{min-height:calc(64px * var(--hh,1))}.wk .hk[style*="--hh:0.5"]{padding-top:3px;padding-bottom:2px}}
