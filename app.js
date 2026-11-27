@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.2.1';
+const APP_VERSION='2.3.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1502,6 +1502,41 @@ ctxModal=function(){modal(`<h3>Periodo</h3><div class="seg" id="cTri">${TRI_N.ma
     if(/sin evaluar$/.test(x.t))return;const k=x.t+'|'+x.s;if(vistos.has(k))return;vistos.add(k);out.push(x)})));
   const R=[...refuerzoDe(AR_TUT),...refuerzoDe(AR_CIC)].map(({al,l})=>({ic:'alert',c:'var(--l1)',t:`${esc(al.nombre)} necesita refuerzo`,s:l.map(([a,v])=>`${esc(abA(a))} ${nf1(v)}`).join(' · '),a:`data-veral="${al.id}"`}));
   return [...R,...out]}}
+
+
+/* ===================== v2.3 · catálogo oficial del currículo (Anexo II, Orden 30/05/2023) ===================== */
+SECS.curriculo={n:'Currículo',sub:'Currículo oficial de Primaria'};
+let CAT=null,_catP=null;
+function cargarCatalogo(){if(CAT)return Promise.resolve(CAT);if(!_catP)_catP=fetch('catalogo.json').then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(j=>(CAT=j)).catch(e=>{_catP=null;throw e});return _catP}
+Object.assign(UI,{catAr:'MAT',catCu:'3',catTab:'crit',catQ:''});
+const catCursos=a=>{const A=CAT.areas[a],B=CAT.base[A.base];return (A.cursos||B.cursos).map(String)};
+function vCurriculo(){
+  if(!CAT){cargarCatalogo().then(()=>{if(UI.tab==='curriculo')render()}).catch(()=>{if(UI.tab==='curriculo'){UI.catErr=1;render()}});
+    return ptitle('Currículo oficial','Primaria · Andalucía')+`<div class="card pad empty2">${UI.catErr?'<b>No se ha podido cargar el catálogo</b><p>Comprueba la conexión y vuelve a entrar.</p>':'<b>Cargando el currículo…</b>'}</div>`}
+  const A=CAT.areas[UI.catAr]||CAT.areas.MAT,B=CAT.base[A.base],cs=catCursos(UI.catAr);if(!cs.includes(UI.catCu))UI.catCu=cs[0];
+  const cic=String(Math.ceil(+UI.catCu/2)),q=UI.catQ.trim().toLowerCase().normalize('NFD').replace(/\p{M}/gu,'');
+  const hit=t=>!q||t.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').includes(q);
+  const areas=`<div class="arbar catar">${Object.entries(CAT.areas).map(([k,a])=>`<button class="${k===UI.catAr?'on':''}" data-catar="${k}" style="--c:#5b63e8">${esc(a.n)}</button>`).join('')}</div>`;
+  const cursos=`<div class="tabs2">${pills('catcu',UI.catCu,cs.map(c=>[c,c+'.º']))}${pills('cattab',UI.catTab,[['crit','Criterios'],['sab','Saberes básicos']])}</div>`;
+  const buscar=`<input class="catq" type="search" placeholder="Buscar en ${UI.catTab==='crit'?'criterios':'saberes'}…" value="${esc(UI.catQ)}" data-catq>`;
+  const ayuda=UI.catTab==='crit'?'<p class="small muted" style="margin:-4px 2px 10px">Cada criterio aparece resumido; tócalo para ver el texto oficial.</p>':'';
+  let body='';
+  if(UI.catTab==='crit'){
+    const L=B.crit[UI.catCu]||[];
+    body=Object.entries(B.ces).map(([n,t])=>{const cr=L.filter(x=>String(x[1])===n&&(hit(x[2])||hit(x[3]||'')||hit(x[4]||'')||hit(t)));if(!cr.length)return '';
+      return `<div class="card pad catce"><details class="catcet"><summary><b>Competencia ${n} · ${esc((B.cet||{})[n]||'')}</b><span class="catmas">${ICONS.down}</span></summary><p>${esc(t)}</p></details>${cr.map(([c,,tx,ti,re])=>`<details class="catcr"><summary><span class="catcod"><b>${c}</b><small>${esc(A.sen)}.${UI.catCu}.${c}</small></span><span class="catres"><b>${esc(ti||'')}</b><span>${esc(re||tx)}</span></span><span class="catmas">${ICONS.down}</span></summary><p class="catlit"><small>Texto oficial del BOJA</small>${esc(tx)}</p></details>`).join('')}</div>`}).join('')||'<div class="card pad muted">Nada coincide con la búsqueda.</div>';
+  }else{
+    const S=B.sab[cic];
+    body=S?Object.entries(S.bloques).map(([k,n])=>{const it=S.items.filter(x=>x[0].split('.')[2]===k&&hit(x[1]+' '+x[2]));if(!it.length)return '';let ap='';
+      return `<div class="card pad catce"><div class="catcet"><b>${k}. ${esc(n)}</b></div>${it.map(([c,t,a])=>{const h=a&&a!==ap?`<div class="catap">${esc(a)}</div>`:'';ap=a||ap;return h+`<div class="catcr"><span class="catcod"><small>${esc(c)}</small></span><p>${esc(t)}</p></div>`}).join('')}</div>`}).join('')||'<div class="card pad muted">Nada coincide con la búsqueda.</div>':'<div class="card pad muted">Sin saberes para este ciclo.</div>';
+  }
+  const nota=`<p class="small muted catnota">${esc(CAT.fuente)}${A.senDudoso?' El prefijo de Séneca de esta área está por confirmar.':''}</p>`;
+  return ptitle('Currículo oficial',`${esc(A.n)} · ${UI.catCu}.º · ${cic==='2'?'2.º':cic+'.<sup>er</sup>'} ciclo`)+areas+cursos+buscar+ayuda+body+nota}
+VIEWS.curriculo=vCurriculo;
+{const _b=VIEWS.ajustes;VIEWS.ajustes=()=>_b()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.doc||ICONS.pen,'var(--a-prog)','Currículo oficial de Primaria','Todas las áreas y cursos: criterios y saberes del BOJA','data-tab="curriculo"')}</div>`}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-catar],[data-catcu],[data-cattab]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();const d=t.dataset;
+  if(d.catar){UI.catAr=d.catar;UI.catQ=''}if(d.catcu)UI.catCu=d.catcu;if(d.cattab)UI.catTab=d.cattab;render()},true);
+document.addEventListener('input',e=>{if(!e.target.matches||!e.target.matches('[data-catq]'))return;UI.catQ=e.target.value;const pos=e.target.selectionStart;render();const n=document.querySelector('[data-catq]');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();

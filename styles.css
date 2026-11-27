@@ -868,3 +868,26 @@ html.claro .stucard .lt b{color:var(--ink)}html.claro .stucard .lt span{color:va
 .hk{min-height:calc(74px * var(--hh,1))}
 .wk .hk[style*="--hh:0.5"]{padding-top:5px;padding-bottom:4px}
 @media(max-width:899px){.hk{min-height:calc(64px * var(--hh,1))}.wk .hk[style*="--hh:0.5"]{padding-top:3px;padding-bottom:2px}}
+/* ===================== v2.3 · currículo oficial ===================== */
+.catar button{font-size:12px;padding:6px 11px}
+.catq{width:100%;margin:0 0 12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:500 14px Inter,sans-serif}
+.catce{margin-bottom:12px}.catcet{margin-bottom:8px}.catcet b{font-size:14px}.catcet p{margin:4px 0 0;color:var(--muted);font-size:13px;line-height:1.45}
+.catcr{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.catcr p{margin:0;font-size:13.5px;line-height:1.45}
+.catcod{display:flex;flex-direction:column;gap:2px}.catcod b{font-size:14px}.catcod small{font-size:11px;color:var(--muted);word-break:keep-all;white-space:nowrap}
+.catap{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;padding:10px 0 4px}
+.catnota{margin:4px 2px 20px}
+@media(max-width:420px){.catcr{grid-template-columns:74px 1fr}.catcr p{font-size:13px}}
+details.catcr{display:block;padding:0}
+details.catcr>summary{list-style:none;display:grid;grid-template-columns:86px 1fr 18px;gap:10px;padding:10px 0;cursor:pointer}
+details.catcr>summary::-webkit-details-marker{display:none}
+.catres{display:flex;flex-direction:column;gap:3px}.catres b{font-size:14px}.catres span{font-size:13.5px;line-height:1.45;color:var(--ink)}
+.catmas svg{width:16px;height:16px;color:var(--muted);transition:transform .15s}
+details[open] .catmas svg{transform:rotate(180deg)}
+.catlit{margin:0 0 12px 96px;padding:10px 12px;border-radius:10px;background:color-mix(in srgb,var(--pri,#5b63e8) 6%,var(--card));font-size:13px;line-height:1.5;color:var(--muted)}
+.catlit small{display:block;font-weight:800;color:var(--ink);margin-bottom:3px;font-size:11.5px}
+@media(max-width:420px){details.catcr>summary{grid-template-columns:70px 1fr 16px;gap:8px}.catlit{margin-left:0}.catres span{font-size:13px}}
+details.catcet>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer}
+details.catcet>summary::-webkit-details-marker{display:none}
+details.catcet[open] .catmas svg{transform:rotate(180deg)}
+details.catcet>summary b{font-size:15px;color:var(--pri,#5b63e8)}
