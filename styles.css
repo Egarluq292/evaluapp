@@ -915,3 +915,6 @@ html.claro .pills button.on{background:#fff;color:var(--ink)}
 .side .brand2 img{width:46px;height:46px;border-radius:12px}
 .pinicio .ptitle{align-items:center}
 .mtop2 .nw{white-space:nowrap}
+/* v2.5.1 · mismo icono en todas las pantallas y saludo más contenido */
+.mtop2 img,.mtop2.ini img{width:50px;height:50px;border-radius:13px;box-shadow:none}
+.mtop2.ini .mctx b{font-size:17px;line-height:1.2}
