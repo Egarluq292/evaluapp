@@ -903,3 +903,7 @@ details.catcet>summary b{font-size:15px;color:var(--pri,#5b63e8)}
 .grpc .btn,.grpnew{display:inline-flex;flex-direction:row;align-items:center;gap:6px;width:auto;height:auto;min-height:0;border-radius:99px;padding:8px 14px;font-size:13.5px;line-height:1.2}
 .grpc .btn svg,.grpnew svg{width:16px;height:16px;margin:0}
 .grpnew{margin:4px 0 24px}
+/* v2.4.1 · secciones nuevas con su color de acento (modo oscuro) */
+:root{--a-curriculo:var(--a-prog);--s-curriculo:var(--s-prog);--a-grupos:var(--a-alumnado);--s-grupos:var(--s-alumnado)}
+.pills button.on{background:var(--acc,#9cc8f2);color:#0e1623}
+html.claro .pills button.on{background:#fff;color:var(--ink)}
