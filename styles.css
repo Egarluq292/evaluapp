@@ -627,3 +627,17 @@ nav.tabs{background:#121c2c}
   #print .cabp span{font-size:30pt}
   #print .cabtxt{font-size:30pt;padding:4mm 14mm}
 }
+/* v1.9.5: mismo diseño en pantalla, PDF y cualquier dispositivo */
+.cabp{position:relative}.cabp::after{z-index:0}
+.cabp>span{display:none}
+.cab .cabtx{position:absolute;inset:0;width:100%;height:100%;z-index:1}
+.cabn{position:relative;aspect-ratio:3.8/1;background:#fbfaf6}
+.dtop,#print .ptop{display:grid;grid-template-columns:auto 1fr;align-items:baseline;column-gap:12px}
+.dh,#print .ph{white-space:nowrap}
+.dar,#print .par{text-align:right}
+@media print{
+  #print .cabn{aspect-ratio:auto;height:22mm;background:none}
+  #print .cab .cabtx{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+.cabn{aspect-ratio:auto}.cabn .cabtx{position:static;display:block;height:auto;aspect-ratio:3.8/1}
+@media print{#print .cabn .cabtx{height:34mm;width:100%;aspect-ratio:auto}}

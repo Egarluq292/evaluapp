@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.9.4';
+const APP_VERSION='1.9.5';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -505,8 +505,10 @@ async function cargarCabRemota(){let vl='';try{vl=localStorage.getItem('evaluapp
   try{const j=await Sync.call({action:'cabGet'});if(j&&j.img){localStorage.setItem('evaluapp-cab',j.img);if(S.config.cabVer)localStorage.setItem('evaluapp-cab-ver',S.config.cabVer);render()}}catch(e){}}
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
 function cabeceraHTML(f){const k=S.config.cabecera||'acuarela',t=may1(fLarga(f));
-  if(k==='ninguna')return `<div class="cabtxt">${esc(t)}</div>`;
-  if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt=""><span>${esc(t)}</span></div>`;
+  const fs=Math.round(Math.min(112,1080/(t.length*.37)));
+  const txt=(fill,stroke)=>`<svg class="cabtx" viewBox="0 0 1200 316" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><text x="600" y="${158+fs*.33}" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="${fs}" fill="${fill}" stroke="${stroke}" stroke-width="${stroke==='none'?0:12}" stroke-linejoin="round" paint-order="stroke">${esc(t)}</text></svg>`;
+  if(k==='ninguna')return `<div class="cab cabn">${txt('#2c5866','none')}</div>`;
+  if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt="">${txt('#2c5866','rgba(251,250,246,.85)')}</div>`;
   return `<div class="cab">${(CABECERAS[k]||CABECERAS.acuarela).svg(esc(t))}</div>`}
 function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const r=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1400000&&q>.4){q-=.1;d=c.toDataURL('image/jpeg',q)}try{localStorage.setItem('evaluapp-cab',d);S.config.cabecera='propia';saveConfig();render();subirCabRemota(d)}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
 /* ---- sesiones ---- */
@@ -621,11 +623,13 @@ function imprimirPlan(fechas){
   let el=document.getElementById('print');if(!el){el=document.createElement('div');el.id='print';document.body.appendChild(el)}
   const gen=S.config.avisoSust?`<div class="pgen"><b>Indicaciones generales</b>${S.config.avisoSust.split('\n').filter(x=>x.trim()).map(x=>`<p>${esc(x)}</p>`).join('')}</div>`:'';
   el.innerHTML=fechas.filter(f=>franjasDe(f).length).map((f,ix)=>{const n=S.prog[sesId(f,'n')];
-    return `<section class="ppage">${cabeceraHTML(f)}${ix===0?gen:''}${n&&n.d.notas?`<div class="pnota"><b>Avisos:</b> ${esc(n.d.notas)}</div>`:''}${franjasDe(f).map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const vacia=!CURRICULO[fr.ar]&&!fr.fijo&&sesVacia(f,i);
+    return `<section class="ppage">${cabeceraHTML(f)}${ix===0?gen:''}${n&&n.d.notas?`<div class="pnota"><b>Avisos:</b> ${esc(n.d.notas)}</div>`:''}${franjasDe(f).map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const vacia=sesVacia(f,i)&&!fr.fijo;
       return `<div class="prow"><div class="ptop"><span class="ph">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="par" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${fr.ref?' ®':''}</span></div>${misTxt(fr)?`<div class="pmis">${esc(misTxt(fr))}</div>`:''}${vacia?'':`<div class="pcols n${bl.length}">${bl.map(([k,lab])=>{const y=d[k];const t=y.act||fr.fijo||'';const sn=sesionN(f,i,y.ud);return `<div class="pcol">${bl.length>1?`<b class="pl">${lab}</b>`:''}${sn?`<div class="pu">${esc(sn.cod)} · sesión ${sn.n}${sn.tot?' de '+sn.tot:''}</div>`:''}${t?`<ul>${t.split('\n').filter(x=>x.trim()).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}${y.mat?`<div class="pm">Materiales: ${esc(y.mat)}</div>`:''}${y.ref?'<div class="pr">REFORZAR</div>':''}</div>`}).join('')}</div>`}</div>`}).join('')}</section>`}).join('');
   document.body.classList.add('printing');
   const fin=()=>{document.body.classList.remove('printing');window.removeEventListener('afterprint',fin)};
-  window.addEventListener('afterprint',fin);setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},150);
+  window.addEventListener('afterprint',fin);const imp=()=>setTimeout(()=>{try{window.print()}catch(e){toast('Tu navegador no permite imprimir desde aquí')}},200);
+  const imgs=[...el.querySelectorAll('img')].map(i=>i.complete?null:new Promise(r=>{i.onload=i.onerror=r})).filter(Boolean);
+  Promise.all([document.fonts?document.fonts.load('700 40px "Amatic SC"'):null,...imgs]).then(()=>document.fonts?document.fonts.ready:null).then(imp,imp);
 }
 function imprimir(B){imprimirPlan([UI.pfecha])}
 /* ---- Evaluar: unidad en curso ---- */
