@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.9.8';
+const APP_VERSION='2.0.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1253,6 +1253,134 @@ document.addEventListener('click',e=>{
   if(d.act==='actBack'){UI.act=null;render();scrollTo(0,0);return}
   if(d.q==='act'){if(_pila.length)_pila[_pila.length-1]();UI.tab='evaluar';UI.evTab='act';UI.act=null;render();actModal();return}
 },true);
+
+/* ===================== v2.0 · rediseño: Inicio-panel, Cuaderno, Planificación, Alumnado ===================== */
+const temaOsc=()=>{try{return localStorage.getItem('evaluapp-tema')==='oscuro'}catch(e){return false}};
+function aplicarTema(){document.documentElement.classList.toggle('claro',!temaOsc());const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',temaOsc()?'#0e1623':'#f3f5fb')}
+aplicarTema();
+SECS.evaluar={n:'Cuaderno',sub:'Actividades evaluables y notas'};
+SECS.prog=Object.assign({},SECS.prog,{n:'Planificación',sub:'Semana, unidades y horario'});
+SECS.inicio=Object.assign({},SECS.inicio,{n:'Inicio'});
+NAV13.splice(0,NAV13.length,'inicio','evaluar','prog','alumnado','seneca','avisos','ajustes');
+const NAV_PRI=['inicio','evaluar','prog','alumnado'];
+const TRF=['#fde0e3','#ffeadf','#e2f5e7','#e2eafe','#d6f2f6'],TRT=['#c2333f','#bf5f2c','#2b8546','#3757c3','#137d90'];
+const tramoDe=n=>n==null?0:n<3?1:n<5?2:n<7?3:n<9?4:5;
+const chipN=(n,extra='')=>n==null?`<span class="nb nb0 ${extra}">–</span>`:`<span class="nb nb${tramoDe(n)} ${extra}">${(Math.round(n*10)/10).toString().replace('.',',')}</span>`;
+const esMovil=()=>window.innerWidth<900;
+let _rsz;window.addEventListener('resize',()=>{clearTimeout(_rsz);_rsz=setTimeout(()=>{const m=esMovil();if(m!==window.__mov){window.__mov=m;render()}},150)});window.__mov=esMovil();
+function saludo(){const h=new Date().getHours();return h<14?'Buenos días':h<21?'Buenas tardes':'Buenas noches'}
+function mediaAl(al,regs){const v=CRITS.filter(x=>aplica(al,x.c)).map(x=>notaCrit(regs,al.id,x.c)).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
+const ptitle=(t,sub,acc='')=>`<div class="ptitle"><div><h1>${t}</h1>${sub?`<div class="psub">${sub}</div>`:''}</div>${acc?`<div class="pacc">${acc}</div>`:''}</div>`;
+
+/* ---- barra lateral, superior e inferior ---- */
+renderChrome=function(){
+  const k=UI.tab,sec=SECS[k]||SECS.inicio;
+  const root=document.documentElement.style;root.setProperty('--acc',`var(--a-${k})`);root.setProperty('--sec',`var(--s-${k})`);
+  const nav=n=>`<button class="nav ${k===n?'on':''}" data-tab="${n}" style="${secVars(n)}">${ICONS[n]}${SECS[n].n}${n==='avisos'&&avisosN()?`<span class="nbadge">${avisosN()}</span>`:''}</button>`;
+  setHTML('side',`<div class="brand2"><img src="icons/logo.png" alt=""><b>Evalú<span>app</span></b></div>
+   <button class="ctxcard" data-act="ctx"><b>${supO(esc(areaN(UI.area)))}</b><span>${cursoN('todos')} · ${triTxt(UI.tri)}</span>${ICONS.down}</button>
+   ${NAV_PRI.map(nav).join('')}<div class="navsep"></div>${NAV13.filter(n=>!NAV_PRI.includes(n)).map(nav).join('')}
+   <div class="foot"><div class="sync">${syncHTML()}</div></div>`);
+  setHTML('top',`<div class="mtop2"><img src="icons/logo.png" alt=""><button class="mctx" data-act="ctx"><b>${sec.n}</b><span>${supO(esc(areaN(UI.area)))} · ${triTxt(UI.tri)} ${ICONS.down}</span></button><button class="iconbtn ghost" data-act="drawer" aria-label="Menú">${ICONS.menu}${avisosN()?`<i class="dotb"></i>`:''}</button></div>`);
+  document.getElementById('top').classList.remove('empty');
+  const nb=(n,lab)=>`<button class="${k===n?'on':''}" data-tab="${n}">${ICONS[n]}<span>${lab}</span></button>`;
+  setHTML('tabs',`<div class="in5">${nb('inicio','Inicio')}${nb('evaluar','Cuaderno')}<button class="fab" data-act="quick" aria-label="Acciones rápidas">${ICONS.plus}</button>${nb('prog','Planificación')}${nb('alumnado','Alumnado')}</div>`);
+};
+
+/* ---- Inicio = panel ---- */
+function vInicio20(){
+  const regs=periodRegs(),als=alumnosArea(),hoy=today(),ahora=new Date().toTimeString().slice(0,5);
+  const meds=als.map(al=>mediaAl(al,regs)),mv=meds.filter(x=>x!=null);
+  const mg=mv.length?mv.reduce((a,b)=>a+b,0)/mv.length:null;
+  let tot=0,ev=0;als.forEach(al=>CRITS.forEach(x=>{if(!aplica(al,x.c))return;tot++;if(notaCrit(regs,al.id,x.c)!=null)ev++}));
+  const ref=meds.filter(x=>x!=null&&x<5).length;
+  const uda=CURS().map(c=>udActualDe(UI.area,c)).filter(Boolean)[0];
+  const frs=franjasDe(hoy),act=frs.find(fr=>fr.ini<=ahora&&(fr.fin||'')>ahora),sig=frs.find(fr=>fr.ini>ahora);
+  const nomF=fr=>CURRICULO[fr.ar]?areaN(fr.ar):(fr.lab||'Otra');
+  const sub=`${may1(fLarga(hoy))}${act?` · ahora: ${esc(nomF(act))}`:''}${sig?` · después: ${esc(nomF(sig))} a las ${sig.ini}`:''}`;
+  const kpi=(l,v,s,cls='')=>`<div class="card kpi"><small>${l}</small><b class="${cls}">${v}</b><span>${s}</span></div>`;
+  const kpis=`<div class="kpis">${kpi('Media del grupo',mg==null?'–':mg.toFixed(1).replace('.',','),`${supO(esc(areaN(UI.area)))} · ${triTxt(UI.tri)}`)}${kpi('Criterios evaluados',tot?Math.round(ev/tot*100)+' %':'–',`${ev} de ${tot} notas posibles`)}${kpi('Necesitan refuerzo',String(ref),'media por debajo de 5',ref?'rojo':'')}${kpi('Unidad en curso',uda?esc(codUd(uda)):'–',uda?esc(uda.d.titulo):'Márcala en Planificación','peq')}</div>`;
+  const barras=CRITS.map(x=>{const a2=als.filter(al=>aplica(al,x.c));const ns=a2.map(al=>notaCrit(regs,al.id,x.c));const n=a2.length||1;const r=ns.filter(v=>v!=null&&v<5).length,m=ns.filter(v=>v!=null&&v>=5&&v<7).length,b=ns.filter(v=>v!=null&&v>=7).length;
+    return `<button class="bar" data-critres="${x.c}" title="${x.c} ${esc(x.t)}"><i style="height:${b/n*100}%;background:#b6e6c5"></i><i style="height:${m/n*100}%;background:#d6e0fb"></i><i style="height:${r/n*100}%;background:#ffcfd5"></i><em>${x.c}</em></button>`}).join('');
+  const hoyH=frs.length?frs.map((fr,i)=>{const {d}=getSes(hoy,i);const t=bloquesDe(fr,d).map(([k])=>d[k].act).filter(Boolean).join(' · ')||fr.fijo||'';
+    return `<button class="cls" style="--c:${arCol(fr.ar)}" data-sed="${hoy}|${i}"><span class="h">${esc(fr.ini)}</span><b>${supO(esc(franjaTit(fr)))}${refMark(fr)}</b>${t?esc(t.split('\n')[0]):'<span class="vac">Sin programar</span>'}</button>`}).join(''):'<div class="muted small">Hoy no hay clases en tu horario.</div>';
+  const av=avisosData().slice(0,4);
+  const pend=av.length?av.map(a=>`<button class="cls" style="--c:${a.c}" ${a.a}><b>${a.t}</b>${a.s||''}</button>`).join(''):'<div class="muted small">Nada pendiente.</div>';
+  const dotC=n=>n==null?'#e3e7f0':['#ffb3bb','#ffc8ad','#a6dfb7','#b6c9f6','#9adbe6'][tramoDe(n)-1];
+  const tarjetas=als.map((al,i)=>`<button class="card stc" data-veral="${al.id}"><div class="h"><span class="av">${esc(inic(al.nombre))}</span><b>${esc(al.nombre)}<small>${al.curso}.º</small></b>${chipN(meds[i])}</div><div class="dots">${CRITS.filter(x=>aplica(al,x.c)).map(x=>`<i style="background:${dotC(notaCrit(regs,al.id,x.c))}" title="${x.c}"></i>`).join('')}</div></button>`).join('');
+  return ptitle(saludo(),sub,`<button class="btn pri2" data-act="quick">${ICONS.plus} Evaluar o anotar</button>`)+kpis+
+   `<div class="row2"><div class="card pad"><div class="h3">Notas por criterio <span class="muted small">· rojo &lt; 5 · azul 5-6,9 · verde ≥ 7</span></div><div class="bars">${barras}</div></div>
+    <div class="card pad"><div class="h3">Hoy</div>${hoyH}</div></div>
+   <div class="row2 r2b"><div><div class="h3 out">Alumnado</div>${als.length?`<div class="stcards">${tarjetas}</div>`:'<div class="card pad muted">Añade a tus alumnos en Ajustes.</div>'}</div><div class="card pad"><div class="h3">Pendiente</div>${pend}</div></div>`;
+}
+
+/* ---- Cuaderno ---- */
+UI.cqAct=null;
+function vCuaderno(){
+  if(UI.act&&S.prog[UI.act])return vActividad(S.prog[UI.act]);
+  UI.act=null;
+  const L=actsPeriodo().slice().reverse(),als=alumnosFiltro(),regs=periodRegs();
+  const acc=`${L.length?`<button class="btn g" data-act="cqSen">${ICONS.seneca} Pasar a Séneca</button>`:''}<button class="btn pri2" data-act="actNueva">${ICONS.plus} Nueva actividad</button>`;
+  const head=ptitle('Cuaderno',`${supO(esc(areaN(UI.area)))} · ${cursoN(UI.filtro)} · ${triTxt(UI.tri)}`,acc)+`<div class="tabs2">${pills('evtab',UI.evTab,[['act','Actividades'],['crit','Criterios'],['rub','Rúbricas']])}${pills('filtro',UI.filtro,[['todos','Todos'],...CURS().map(c=>[c,c+'.º'])])}</div>`;
+  if(UI.evTab!=='act'){const h=vEvaluar19();return head+h.replace(/^<h2>Evaluar<\/h2>/,'').replace(pills('evtab',UI.evTab,[['act','Actividades'],['crit','Criterios'],['rub','Rúbricas']]),'').replace(ctxRow(),'')}
+  if(!L.length)return head+`<div class="card pad empty2"><b>Aún no hay actividades en ${triTxt(UI.tri)}</b><p>Crea una actividad con el mismo nombre y criterios que en Séneca. Cada actividad guarda sus notas y la media del trimestre se calcula sola.</p><button class="btn pri2" data-act="actNueva">${ICONS.plus} Nueva actividad</button></div>`;
+  if(!als.length)return head+`<div class="card pad empty2"><b>No hay alumnos</b><p>Añádelos en Ajustes.</p></div>`;
+  const notaAct=(p,al)=>{const v=notasAct(p).filter(r=>r.a===al.id).map(notaReg).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null};
+  if(!esMovil()){
+    return head+`<div class="card cqw"><table class="cq"><thead><tr><th class="al">Alumno</th>${L.map(p=>`<th><button class="cqh" data-actab="${p.id}"><b>${esc(p.d.titulo)}</b><span>${fmtF(p.f).slice(0,5)} · ${(p.d.crits||[]).length} ${(p.d.crits||[]).length===1?'criterio':'criterios'}</span></button></th>`).join('')}<th class="add"><button data-act="actNueva" aria-label="Nueva actividad">${ICONS.plus}</button></th><th><b>Media</b><span>trimestre</span></th></tr></thead>
+      <tbody>${als.map(al=>`<tr><td class="al"><button data-veral="${al.id}"><span class="av">${esc(inic(al.nombre))}</span>${esc(al.nombre)}<small>${al.curso}.º</small></button></td>${L.map(p=>{const va=cursosAct(p).includes(al.curso);if(!va)return '<td><span class="nb nbx">·</span></td>';const n=notaAct(p,al),tot=critsAct(p,al).length,he=notasAct(p).filter(r=>r.a===al.id).length;
+        return `<td><button class="cqc" data-cqc="${p.id}|${al.id}">${n==null?'<span class="nb nb0">+</span>':`<span class="nb nb${tramoDe(n)}">${(Math.round(n*10)/10).toString().replace('.',',')}${he<tot?'<i class="falta" title="Faltan criterios"></i>':''}</span>`}</button></td>`}).join('')}<td></td><td>${chipN(mediaAl(al,regs),'fuerte')}</td></tr>`).join('')}</tbody></table></div>
+      <p class="small muted" style="margin:10px 4px">Cada casilla es la media de los criterios de esa actividad. Un puntito junto a la nota indica que faltan criterios por calificar. Toca el título de una actividad para calificarla criterio a criterio.</p>`;
+  }
+  if(!L.some(p=>p.id===UI.cqAct))UI.cqAct=L[L.length-1].id;
+  const p=S.prog[UI.cqAct],crs=critsAct(p),ns=notasAct(p);
+  return head+`<div class="actpills">${L.slice().reverse().map(q=>`<button class="${q.id===p.id?'on':''}" data-cqact="${q.id}">${esc(q.d.titulo)}</button>`).join('')}</div>
+   <div class="card cqw"><table class="cq m"><thead><tr><th class="al">Alumno</th>${crs.map(c=>`<th><b>${c}</b></th>`).join('')}<th><b>Nota</b></th></tr></thead><tbody>${alsAct(p).filter(al=>als.includes(al)).map(al=>`<tr><td class="al"><span class="av">${esc(inic(al.nombre))}</span>${esc(al.nombre.split(' ')[0])}</td>${crs.map(c=>{if(!aplica(al,c))return '<td><span class="nb nbx">·</span></td>';const r=ns.find(x=>x.a===al.id&&x.c===c);return `<td><button class="cqc" data-cqt="${p.id}|${al.id}|${c}">${r?`<span class="nb nb${+nacD(r).n}">${String(notaReg(r)).replace('.',',')}</span>`:'<span class="nb nb0">+</span>'}</button></td>`}).join('')}<td>${chipN(notaAct(p,al),'fuerte')}</td></tr>`).join('')}</tbody></table></div>
+   <div class="btns" style="margin-top:12px"><button class="btn g" data-actab="${p.id}">Calificar de uno en uno</button><button class="btn g" data-actedit="${p.id}">${ICONS.pen} Editar</button><button class="btn g" data-actsen="${p.id}">${ICONS.seneca} Séneca</button></div>`;
+}
+function cqCelda(actId,alId){const p=S.prog[actId],al=alumnosOrd().find(a=>a.id===alId);if(!p||!al)return;
+  const cuerpo=()=>{const ns=notasAct(p);return critsAct(p,al).map(c=>{const r=ns.find(x=>x.a===al.id&&x.c===c),n=r?+nacD(r).n:0;return `<div class="crow"><div class="small"><b>${c}</b> ${esc(CRIT[c].t)}</div><div class="trs">${TRAMOS.map((t,i)=>`<button class="tr ${n===i+1?'on':''}" style="--tc:${TRC[i]}" data-ctr="${c}|${i+1}">${t}</button>`).join('')}</div></div>`}).join('')};
+  modal(`<h3 style="margin-bottom:2px">${esc(al.nombre)}</h3><p class="small muted" style="margin:0 0 10px">«${esc(p.d.titulo)}» · ${al.curso}.º</p><div id="cqB">${cuerpo()}</div><div class="btns" style="justify-content:space-between;margin-top:12px"><button class="btn g" id="cqSig">Siguiente alumno ${ICONS.chev}</button><button class="btn pri2" data-close>Hecho</button></div>`,(m,close)=>{
+    m.addEventListener('click',e=>{const b=e.target.closest('[data-ctr]');if(!b)return;const [c,n]=b.dataset.ctr.split('|');setTramo(p,al.id,c,+n);m.querySelector('#cqB').innerHTML=cuerpo()});
+    m.querySelector('#cqSig').onclick=()=>{const L=alsAct(p).filter(a=>alumnosFiltro().includes(a)),i=L.findIndex(a=>a.id===al.id);close();if(L[i+1])setTimeout(()=>cqCelda(actId,L[i+1].id),0);else toast('Era el último alumno')};
+  })}
+function cqTramo(actId,alId,c){const p=S.prog[actId],al=alumnosOrd().find(a=>a.id===alId);if(!p||!al)return;const r=notasAct(p).find(x=>x.a===alId&&x.c===c),n=r?+nacD(r).n:0;
+  modal(`<h3 style="margin-bottom:2px">${esc(al.nombre)} · ${c}</h3><p class="small muted" style="margin:0 0 12px">${esc(CRIT[c].t)} · «${esc(p.d.titulo)}»</p><div class="trs big">${TRAMOS.map((t,i)=>`<button class="tr ${n===i+1?'on':''}" style="--tc:${TRC[i]}" data-ctr="${i+1}">${t}</button>`).join('')}</div>${n?'<button class="btn g" data-ctr="'+n+'" style="width:100%;margin-top:10px">Quitar la nota</button>':''}`,(m,close)=>{
+    m.addEventListener('click',e=>{const b=e.target.closest('[data-ctr]');if(!b)return;setTramo(p,alId,c,+b.dataset.ctr);close()})})}
+function cqSenModal(){const L=actsPeriodo();modal(`<h3>Pasar a Séneca</h3><p class="small muted" style="margin-top:-6px">Elige la actividad</p><div class="lcard flat">${L.map(p=>lrow(ICONS.seneca,'var(--a-seneca)',esc(p.d.titulo),`${fmtF(p.f)} · ${cursoN(p.d.curso,p.ar)}`,`data-actsen="${p.id}"`)).join('')}</div>`,(m,close)=>{m.addEventListener('click',e=>{if(e.target.closest('[data-actsen]'))close()},true)})}
+
+/* ---- Planificación ---- */
+function vPlan20(){
+  if(!UI.ptab||UI.ptab==='menu')UI.ptab='sem';
+  const t={sem:'Semana',dia:'Día',uds:'Unidades',tri:'Temporalización',hor:'Horario'};
+  const sub=UI.ptab==='uds'?vUds13():{tri:vTris,sem:vSemana20,dia:vDia,hor:vHorario}[UI.ptab]();
+  return ptitle('Planificación',`${supO(esc(areaN(UI.area)))} · ${t[UI.ptab]}`)+`<div class="tabs2">${pills('ptab',UI.ptab,Object.entries(t))}</div>`+sub;
+}
+function vSemana20(){
+  if(esMovil())return vSemana();
+  const l=UI.psem,dias=[0,1,2,3,4].map(n=>addDias(l,n));
+  const head=`<div class="weekbar"><button class="iconbtn" data-psem="-7" style="transform:rotate(180deg)" aria-label="Semana anterior">${ICONS.chev}</button><b>Semana del ${new Date(dias[0]+'T12:00').getDate()} al ${fLarga(dias[4]).replace(/^[^,]+, /,'')}</b><button class="iconbtn" data-psem="7" aria-label="Semana siguiente">${ICONS.chev}</button><span style="flex:1"></span><button class="btn g" data-act="copSem">${ICONS.copy} Copiar semana anterior</button><button class="btn pri2" data-act="expSem">Exportar PDF</button></div>`;
+  if(![1,2,3,4,5].some(w=>((S.config.horario||{})[w]||[]).length))return head+`<div class="card pad empty2"><b>Primero, tu horario</b><p>Con él aparecen tus clases de cada día.</p><button class="btn pri2" data-ptab="hor">Configurar horario</button></div>`;
+  return head+`<div class="board">${dias.map(f=>{const w=new Date(f+'T12:00').getDay();return `<div class="card bcol ${f===today()?'hoy':''}"><button class="bh" data-pdia="${f}"><b>${may1(DIAS[w])}</b><span>${new Date(f+'T12:00').getDate()}</span></button>${franjasDe(f).map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);
+    const txt=bl.map(([k,lab])=>{const y=d[k];const tx=y.act||'';if(!tx)return '';return `<div class="bt ${y.est}">${bl.length>1?`<em>${lab}</em> `:''}${esc(tx).replace(/\n/g,'<br>')}</div>`}).join('')||(fr.fijo?`<div class="bt vac">${esc(fr.fijo)}</div>`:'<div class="bt vac">Sin programar</div>');
+    const ch=bl.map(([k])=>{const sn=sesionN(f,i,d[k].ud);return sn?`${sn.cod} · S${sn.n}`:''}).filter(Boolean)[0];
+    return `<button class="cls" style="--c:${arCol(fr.ar)}" data-sed="${f}|${i}"><span class="h">${esc(fr.ini)}</span><b>${supO(esc(franjaTit(fr)))}${refMark(fr)}</b>${txt}${ch?`<span class="chip2">${esc(ch)}</span>`:''}</button>`}).join('')||'<div class="muted small">Sin clases.</div>'}</div>`}).join('')}</div>`;
+}
+
+Object.assign(VIEWS,{inicio:vInicio20,evaluar:vCuaderno,prog:vPlan20});
+
+/* ---- clics nuevos ---- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-cqc],[data-cqt],[data-cqact],[data-act="cqSen"],[data-act="temaT"]');if(!t)return;
+  e.preventDefault();e.stopImmediatePropagation();const d=t.dataset;
+  if(d.cqc){const [a,b]=d.cqc.split('|');cqCelda(a,b);return}
+  if(d.cqt){const [a,b,c]=d.cqt.split('|');cqTramo(a,b,c);return}
+  if(d.cqact){UI.cqAct=d.cqact;render();return}
+  if(d.act==='cqSen'){cqSenModal();return}
+  if(d.act==='temaT'){try{localStorage.setItem('evaluapp-tema',temaOsc()?'claro':'oscuro')}catch(err){}aplicarTema();render();return}
+},true);
+/* Ajustes: tema */
+{const _b=VIEWS.ajustes;VIEWS.ajustes=()=>_b()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.pen,'var(--a-ajustes)','Tema',temaOsc()?'Oscuro · toca para pasar a claro':'Claro · toca para pasar a oscuro','data-act="temaT"')}</div>`}
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
