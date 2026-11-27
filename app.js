@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.0.0';
+const APP_VERSION='2.1.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -573,7 +573,7 @@ function vDia(){
   if(!frs.length)return nav+`<div class="card empty"><b>No hay horario para este día</b><div style="margin-top:12px"><button class="btn pri" data-ptab="hor">Configurar horario</button></div></div>`;
   const notas=S.prog[sesId(f,'n')];
   return nav+acc+`<div class="dpage">${cabeceraHTML(f)}${frs.map((fr,i)=>{const {d}=getSes(f,i);const bl=bloquesDe(fr,d);const conCont=CURRICULO[fr.ar]||fr.fijo||!sesVacia(f,i);
-     return `<button class="drow" data-sed="${f}|${i}"><div class="dtop"><span class="dh">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="dar" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span></div>${misTxt(fr)?`<div class="dmis">${esc(misTxt(fr))}</div>`:''}${conCont?`<div class="dcols n${bl.length}">${celdaTxt(f,i)}</div>`:''}</button>`}).join('')}</div>
+     return `<button class="drow" data-sed="${f}|${i}"><div class="dtop"><span class="dh">${esc(fr.ini||'')} - ${esc(fr.fin||'')}</span><span class="dar" style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}${refMark(fr)}</span></div>${misTxt(fr)?`<div class="dmis">${esc(misTxt(fr))}</div>`:''}${conCont?`<div class="dcols n${bl.length}">${celdaTxt(f,i)}</div>`:''}</button>${typeof actsClase==='function'?actsChips(actsClase(f,fr),'dacts',fr):''}`}).join('')}</div>
    <div class="card stack" style="margin-top:12px"><h3>Avisos de este día</h3><textarea data-dnota="${f}" placeholder="Salidas, cambios, quién recoge a quién…">${esc(notas?notas.d.notas:'')}</textarea></div>`;
 }
 /* ---- editor de una sesión ---- */
@@ -588,7 +588,7 @@ function sesEditor(f,i){
      <div class="erow"><button class="tchip eref ${y.ref?'on':''}">Reforzar</button>${y.est==='nohecha'?`<button class="btn sm epasar">${y.mov?'Pasado al '+fmtF(y.mov)+' · volver a pasar':'Pasar a la próxima sesión'}</button>`:''}</div></div>`}).join('');
   const leer=m=>{m.querySelectorAll('.eblk').forEach(b=>{const y=d[b.dataset.k];y.act=b.querySelector('.eact').value.trim();const u=b.querySelector('.eud');if(u)y.ud=u.value;y.mat=b.querySelector('.emat').value.trim();y.est=b.querySelector('.eest .on')?.dataset.v||'';y.ref=b.querySelector('.eref').classList.contains('on')})};
   modal(`<h3 style="margin-bottom:4px"><span style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}</span>${refMark(fr)}</h3><p class="small muted" style="margin:0 0 12px">${may1(fLarga(f))} · ${esc(fr.ini||'')}–${esc(fr.fin||'')}</p>
-   ${esTut(fr)?`<button class="junto ${d.junto?'on':''}" id="eJunto"><span class="tg"></span>Lo mismo para ${CURS(fr.ar).map(c=>c+'.º').join(' y ')}</button>`:''}<div id="eBlks">${blkHTML()}</div>
+   ${esTut(fr)?`<button class="junto ${d.junto?'on':''}" id="eJunto"><span class="tg"></span>Lo mismo para ${CURS(fr.ar).map(c=>c+'.º').join(' y ')}</button>`:''}<div id="eBlks">${blkHTML()}</div>${typeof actsClase==='function'?`<div class="eacts"><div class="small muted" style="margin:14px 0 6px;font-weight:700">Actividades evaluables de esta clase</div>${actsChips(actsClase(f,fr),'',fr)||'<div class="small muted">Ninguna.</div>'}<div class="small muted" style="margin:12px 0 6px;font-weight:700">Nueva actividad evaluable en esta clase</div><div class="enact">${arsClase(fr).map(a=>`<button class="btn sm g" data-enact="${a}" style="--cor:${arCol(a)}">${ICONS.plus} ${esc(AB_AREA[a]||areaN(a))}</button>`).join('')}</div></div>`:''}
    <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="eOk">Guardar</button></div>`,(m,close)=>{
     m.addEventListener('click',e=>{
       const sb=e.target.closest('.eest button');if(sb){sb.parentElement.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b===sb));leer(m);m.querySelector('#eBlks').innerHTML=blkHTML();return}
@@ -597,6 +597,8 @@ function sesEditor(f,i){
       const ps=e.target.closest('.epasar');if(ps){leer(m);const k=ps.closest('.eblk').dataset.k;const r=pasarPendiente(f,i,k,d[k]);if(r){d[k].mov=r;putSes(f,i,d);close();render();toast('Pasado al '+fLarga(r).replace(/ de \d{4}$/,''))}else toast('No encuentro otra sesión de esta área en las próximas semanas');return}
     });
     m.addEventListener('change',e=>{if(e.target.classList.contains('eud')){leer(m);m.querySelector('#eBlks').innerHTML=blkHTML()}});
+    m.querySelectorAll('[data-enact]').forEach(b=>b.onclick=()=>{const a=b.dataset.enact;leer(m);putSes(f,i,d);close();if(a!==UI.area){setArea(a);UI.area=a}actModal(null,f,{ini:fr.ini})});
+    m.addEventListener('click',e=>{if(e.target.closest('[data-actab]'))close()},true);
     m.querySelector('#eOk').onclick=()=>{leer(m);putSes(f,i,d);close();render();toast('Guardado')};
   });
 }
@@ -1108,23 +1110,28 @@ function vActividad(p){
   return back+cab+tabs+info+`<div class="lcard nlist">${filas||'<div class="muted" style="padding:12px">No hay alumnos de este curso.</div>'}</div>
     <div class="actfoot"><span class="muted small">${hechos} de ${als.length} calificados</span>${i<crs.length-1?`<button class="btn sm pri" data-actc="${crs[i+1]}">Siguiente: ${crs[i+1]} ${ICONS.chev}</button>`:''}</div>`;
 }
-function actModal(id,fecha){
+function actModal(id,fecha,opts={}){
   const p0=id&&S.prog[id];const d=p0?JSON.parse(JSON.stringify(p0.d)):{titulo:'',curso:'ambos',crits:[],ud:''};let f=p0?p0.f:(fecha||today());
   const cs=CURS(),udOpts=udsDe(UI.area);
   const lista=()=>Object.keys(CES).map(ce=>{const xs=CRITS.filter(x=>x.ce==ce);if(!xs.length)return '';return `<div class="cegr"><div class="small muted">CE${ce} · ${esc(CES[ce])}</div>${xs.map(x=>`<label class="ckc"><input type="checkbox" value="${x.c}" ${d.crits.includes(x.c)?'checked':''}><span><b>${x.c}</b> ${esc(x.t)}${x.solo4?` <span class="muted small">(solo ${cs[1]}.º)</span>`:''}</span></label>`).join('')}</div>`}).join('');
   modal(`<h3>${p0?'Editar actividad':'Nueva actividad evaluable'}</h3>
    <div class="field"><label>Título (como en Séneca)</label><input type="text" id="aTit" value="${esc(d.titulo)}" placeholder="P. ej. Examen UD02"></div>
-   <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${[...cs.map(c=>[c,c+'.º']),['ambos','Ambos']].map(([k,n])=>`<button type="button" data-v="${k}" class="${d.curso===k?'on':''}">${n}</button>`).join('')}</div></div></div>
+   <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${[...cs.map(c=>[c,c+'.º']),['ambos','Ambos']].map(([k,n])=>`<button type="button" data-v="${k}" class="${d.curso===k?'on':''}">${n}</button>`).join('')}</div></div></div><div class="field"><label>Clase en la que la haces <span class="muted small">(puede ser de otra área)</span></label><select id="aH"></select></div>
    ${udOpts.length?`<div class="field"><label>Unidad o situación (opcional)</label><div class="erow"><select id="aU"><option value="">Ninguna</option>${udOpts.map(u=>`<option value="${u.id}" ${d.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select><button type="button" class="btn sm" id="aUc">Usar sus criterios</button></div></div>`:''}
    <div class="field"><label>Criterios que evalúa <span class="muted small" id="aN"></span></label><div id="aL" class="clist">${lista()}</div></div>
    <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?'<button class="btn danger" id="aDel">Borrar</button>':'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
+    let hIni=opts.ini||d.ini||'';
+    const horas=()=>{const fv=m.querySelector('#aF').value;const L=franjasDe(fv);const sel=m.querySelector('#aH');
+      const def=hIni&&L.some(x=>x.ini===hIni)?hIni:((L.find(x=>x.ar===UI.area)||L[0]||{}).ini||'');
+      sel.innerHTML=L.length?L.map(x=>`<option value="${x.ini}" ${x.ini===def?'selected':''}>${x.ini}–${x.fin} · ${esc(nomFranja(x))}</option>`).join(''):`<option value="">No tienes clase ese día</option>`;};
+    horas();m.querySelector('#aF').addEventListener('change',()=>{hIni='';horas()});
     const cnt=()=>{const n=m.querySelectorAll('#aL input:checked').length;m.querySelector('#aN').textContent=n?`(${n})`:''};cnt();
     m.querySelector('#aL').addEventListener('change',cnt);
     m.querySelector('#aC').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;m.querySelectorAll('#aC button').forEach(x=>x.classList.toggle('on',x===b))});
     const uc=m.querySelector('#aUc');if(uc)uc.onclick=()=>{const u=S.prog[m.querySelector('#aU').value];if(!u){toast('Elige primero una unidad');return}const set=new Set(u.d.crits||[]);m.querySelectorAll('#aL input').forEach(i=>i.checked=set.has(i.value));cnt()};
     m.querySelector('#aOk').onclick=()=>{const tit=m.querySelector('#aTit').value.trim();const crits=[...m.querySelectorAll('#aL input:checked')].map(i=>i.value);
       if(!tit){toast('Pon un título');return}if(!crits.length){toast('Marca al menos un criterio');return}
-      const nf=m.querySelector('#aF').value||today();const nd={titulo:tit,curso:(m.querySelector('#aC .on')||{}).dataset?.v||'ambos',crits,ud:(m.querySelector('#aU')||{}).value||''};
+      const nf=m.querySelector('#aF').value||today();const nd={titulo:tit,curso:(m.querySelector('#aC .on')||{}).dataset?.v||'ambos',crits,ud:(m.querySelector('#aU')||{}).value||'',ini:m.querySelector('#aH').value||''};
       const pid=p0?p0.id:uid();saveProg({id:pid,t:'act',ar:UI.area,f:nf,d:nd});
       if(p0&&nf!==p0.f)notasAct(p0).forEach(r=>{const nr=Object.assign({},r,{f:nf});putReg(nr);enqueue({op:'up',r:nr})});
       close();abrirAct(pid);toast('Actividad guardada')};
@@ -1381,6 +1388,35 @@ document.addEventListener('click',e=>{
 },true);
 /* Ajustes: tema */
 {const _b=VIEWS.ajustes;VIEWS.ajustes=()=>_b()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.pen,'var(--a-ajustes)','Tema',temaOsc()?'Oscuro · toca para pasar a claro':'Claro · toca para pasar a oscuro','data-act="temaT"')}</div>`}
+
+/* ===================== v2.1 · horario semanal en Inicio y actividades en su clase ===================== */
+UI.isem=lunesDe(today());
+/* actividades de una clase: misma fecha y área; si tienen hora, en esa franja; si no, en la primera franja de esa área ese día */
+function arsClase(fr){const g=CURRICULO[fr.ar]?(CURRICULO[fr.ar].g||''):'';const L=Object.keys(CURRICULO).filter(a=>(CURRICULO[a].g||'')===g);return CURRICULO[fr.ar]?[fr.ar,...L.filter(a=>a!==fr.ar)]:L}
+function nomFranja(x){return CURRICULO[x.ar]?(AB_AREA[x.ar]||areaN(x.ar)).replace(/\u00a0/g,' ')+(CURRICULO[x.ar].g?' '+CURRICULO[x.ar].g.replace(/<\/?sup>/g,''):''):(x.lab||'Otra')}
+function actsClase(f,fr){if(!fr)return [];const T=franjasDe(f);
+  return Object.values(S.prog).filter(p=>p.t==='act'&&p.f===f).filter(p=>{if(p.d.ini&&T.some(x=>x.ini===p.d.ini))return p.d.ini===fr.ini;const L=T.filter(x=>x.ar===p.ar);return L.length&&L[0].ini===fr.ini})
+    .sort((a,b)=>String(a.d.titulo).localeCompare(String(b.d.titulo),'es'))}
+function actsChips(L,cls,fr){if(!L.length)return '';return `<div class="achips ${cls}">${L.map(p=>{const g=progAct(p),hecho=g.tot&&g.n>=g.tot,otra=fr&&p.ar!==fr.ar;return `<button class="achip ${hecho?'ok':''}" data-actab="${p.id}" title="Evaluar «${esc(p.d.titulo)}»"${otra?` style="--cor:${arCol(p.ar)}"`:''}>${ICONS.evaluar}<span class="${hsCls(p.d.titulo).trim()}">${otra?`<i class="aab">${esc(AB_AREA[p.ar]||areaN(p.ar))}</i> `:''}${esc(p.d.titulo)}</span>${g.tot?`<em>${hecho?'✓':g.n+'/'+g.tot}</em>`:''}</button>`}).join('')}</div>`}
+function semanaInicio(){
+  const T=franjasT(),l=UI.isem,dias=[0,1,2,3,4].map(n=>addDias(l,n)),esta=dias.includes(today());
+  const head=`<div class="wkhead"><button class="iconbtn" data-isem="-7" aria-label="Semana anterior" style="transform:rotate(180deg)">${ICONS.chev}</button>
+    <div class="wkt"><b>Semana del ${new Date(dias[0]+'T12:00').getDate()} al ${fLarga(dias[4]).replace(/^[^,]+, /,'').replace(/ de \d{4}$/,'')}</b><span>${esta?'Esta semana':fLarga(dias[0]).replace(/^.* de (\d{4})$/,'$1')}</span></div>
+    <button class="iconbtn" data-isem="7" aria-label="Semana siguiente">${ICONS.chev}</button>${esta?'':`<button class="btn g sm" data-isem="0">Hoy</button>`}</div>`;
+  if(!T.length)return `<div class="card pad wk">${head}<div class="empty2"><b>Aún no tienes horario</b><p>Configúralo una vez y aquí verás tu semana.</p><button class="btn pri2" data-goprog="hor">Configurar horario</button></div></div>`;
+  const H=S.config.horario||{};
+  const cab=`<div class="wkc wkh"></div>${dias.map((f,k)=>`<button class="wkc wkd ${f===today()?'hoy':''}" data-hkd="${f}|"><span>${DIAS[k+1].slice(0,3)}</span><b>${new Date(f+'T12:00').getDate()}</b></button>`).join('')}`;
+  const filas=T.map(t=>`<div class="wkc wkt2"><b>${esc(t.ini)}</b><span>${esc(t.fin)}</span></div>${dias.map((f,k)=>{const fr0=(H[k+1]||[]).find(x=>x.ini===t.ini);if(!fr0)return `<div class="wkc"></div>`;const fr=normFr(fr0),cur=!!CURRICULO[fr.ar];
+      const i=franjasDe(f).findIndex(x=>x.ini===t.ini);const {d}=getSes(f,i);const txt=bloquesDe(fr,d).map(([q])=>d[q].act).filter(Boolean).map(x=>x.split('\n')[0]).join(' · ')||fr.fijo||'';
+      const nom=cur?areaN(fr.ar).replace(/ · 3\.er ciclo$/,''):(fr.lab||'Otra');const g=cur&&CURRICULO[fr.ar].g?CURRICULO[fr.ar].g:'';
+      return `<div class="wkc"><div class="hk ${f===today()?'hoy':''} ${cur?'':'otra'}" role="button" tabindex="0" data-hkd="${f}|${t.ini}" style="--c:${arCol(fr.ar)}"><b class="hkn"><span class="dsk">${esc(nom)}</span><span class="mob ${hsCls(cur?AB_AREA[fr.ar]:nom).trim()}">${esc(cur?AB_AREA[fr.ar]:nom)}</span>${fr.ref?' ®':''}</b>${g?`<span class="hkg">${supO(esc(g))}</span>`:''}${fr.mis?`<span class="hkg"><span class="dsk">↳ ${esc(fr.mis)}</span><span class="mob ${hsCls(MIS_AB[fr.mis]||fr.mis).trim()}">↳\u00a0${esc(MIS_AB[fr.mis]||fr.mis)}</span></span>`:''}${txt?`<span class="hkt">${esc(txt)}</span>`:''}${actsChips(actsClase(f,fr),'',fr)}</div></div>`}).join('')}`).join('');
+  return `<div class="card pad wk">${head}<div class="wkgrid">${cab}${filas}</div><p class="small muted wkpie">Toca una clase para ir a ese día. Las actividades evaluables aparecen en su clase; tócalas para evaluar.</p></div>`;
+}
+{const _vi=vInicio20;vInicio20=function(){const h=_vi();const i=h.indexOf('<div class="kpis">');return i<0?h+semanaInicio():h.slice(0,i)+semanaInicio()+h.slice(i)};VIEWS.inicio=vInicio20}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-isem],[data-hkd]');if(!t||e.target.closest('[data-actab]'))return;e.preventDefault();e.stopImmediatePropagation();const d=t.dataset;
+  if(d.isem!==undefined){UI.isem=+d.isem===0?lunesDe(today()):addDias(UI.isem,+d.isem);render();return}
+  if(d.hkd){const [f]=d.hkd.split('|');try{history.pushState({evt:1},'')}catch(err){}UI.tab='prog';UI.ptab='dia';UI.pfecha=f;render();scrollTo(0,0);const ini=d.hkd.split('|')[1];if(ini)setTimeout(()=>{const i=franjasDe(f).findIndex(x=>x.ini===ini);const el=document.querySelector(`.drow[data-sed="${f}|${i}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}},80)}},true);
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.hk[data-hkd]')){e.preventDefault();e.target.click()}});
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();

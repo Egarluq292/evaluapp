@@ -742,3 +742,72 @@ html.claro .pills{background:#e8ebf4;border:0}
 .row2>.card.pad{display:flex;flex-direction:column}.row2>.card.pad .bars{flex:1;min-height:170px}
 .nb .falta{display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.55;margin-left:4px;vertical-align:2px}
 @media(max-width:899px){#view{padding-top:0}.ptitle{margin:10px 0 12px}}
+/* ===== v2.1 · horario semanal en Inicio ===== */
+.wk{margin-bottom:14px}
+.wkhead{display:flex;align-items:center;gap:10px;margin-bottom:12px}.wkt{flex:1;text-align:center}.wkt b{display:block;font-size:15.5px}.wkt span{font-size:12px;color:var(--muted)}
+.wkgrid{display:grid;grid-template-columns:52px repeat(5,minmax(0,1fr));gap:6px}
+.wkc{min-width:0}
+.wkd{border:0;background:none;font:inherit;color:var(--muted);display:flex;flex-direction:column;align-items:center;padding:4px 0 6px;cursor:pointer;border-radius:12px}
+.wkd span{font-size:12px;text-transform:capitalize}.wkd b{font-size:17px;color:var(--ink)}
+.wkd.hoy{background:var(--pri,#5866f0);color:#fff}.wkd.hoy b{color:#fff}
+.wkt2{display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-start;padding:8px 4px 0 0}.wkt2 b{font-size:12.5px}.wkt2 span{font-size:11px;color:var(--muted)}
+.hk{height:100%;min-height:74px;border-radius:14px;padding:9px 10px;background:color-mix(in srgb,var(--c) 14%,var(--card));border:1px solid color-mix(in srgb,var(--c) 30%,transparent);border-top:4px solid var(--c);display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:transform .12s,box-shadow .12s;overflow-wrap:break-word}
+.hk:hover{transform:translateY(-1px);box-shadow:0 6px 16px color-mix(in srgb,var(--c) 25%,transparent)}
+.hk.hoy{box-shadow:0 0 0 2px var(--pri,#5866f0)}
+.hk.otra{background:color-mix(in srgb,var(--c) 8%,var(--card));border-top-width:3px}
+.hkn{font-size:13px;color:color-mix(in srgb,var(--c) 80%,var(--ink));line-height:1.2}.hkg{font-size:11px;color:var(--muted);line-height:1.2}.hkt{font-size:12px;color:var(--ink);line-height:1.3}
+.achips{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.achip{display:flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--cor,#ff5f6d) 45%,transparent);background:color-mix(in srgb,var(--cor,#ff5f6d) 10%,var(--card));color:var(--ink);border-radius:9px;padding:5px 8px;font:600 12px Inter,sans-serif;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.achip svg{width:14px;height:14px;flex:none;color:var(--cor,#ff5f6d)}.achip span{flex:1}.achip em{font-style:normal;font-size:11px;color:var(--muted);flex:none}
+.achip.ok{border-color:color-mix(in srgb,#2b8546 40%,transparent);background:color-mix(in srgb,#2b8546 9%,var(--card))}.achip.ok svg{color:#2b8546}
+.dacts{flex-direction:row;flex-wrap:wrap;padding:0 18px 12px;margin-top:-4px;border-bottom:1px solid #d9d6cc}.dacts .achip{background:#fff;color:#2a2f37}
+.drow.flash{background:#fff6d6;transition:background .3s}
+.eacts .achips{flex-direction:row;flex-wrap:wrap}
+.wkpie{margin:10px 2px 0}
+@media(max-width:899px){
+  .wkgrid{grid-template-columns:34px repeat(5,minmax(0,1fr));gap:3px}
+  .hk{padding:6px 5px;min-height:64px;border-radius:10px;border-top-width:3px}
+  .hkn{font-size:10.5px}.hkg{font-size:9px}.hkt{display:none}
+  .wkt2 b{font-size:10.5px}.wkt2 span{font-size:9px}.wkd b{font-size:15px}.wkd span{font-size:10.5px}
+  .achip{padding:3px 4px;font-size:9.5px;gap:3px;border-radius:7px}.achip svg{display:none}.achip em{display:none}
+}
+.drow:has(+ .dacts){border-bottom:0}
+.hk .mob{display:none}
+@media(max-width:899px){
+  .hk .dsk{display:none}.hk .mob{display:inline}
+  .hk,.hk *{overflow-wrap:normal;word-break:normal;hyphens:manual}
+  .hkn{font-size:10.5px}.hkn .lg{font-size:8.5px;letter-spacing:-.2px}
+  .hkg .lg{font-size:8px;letter-spacing:-.2px}
+  .achip{font-size:9px;padding:3px 3px;justify-content:center;text-align:center}.achip .lg{font-size:7.5px;letter-spacing:-.2px}
+}
+@media(max-width:375px){.wkgrid{grid-template-columns:30px repeat(5,minmax(0,1fr));gap:2px}.hk{padding:5px 3px}.hkn{font-size:9.5px}.hkn .lg{font-size:7.5px}.hkg{font-size:8px}.hkg .lg{font-size:7px}.wkt2 b{font-size:9.5px}.wkt2 span{font-size:8px}.achip{font-size:8px}.achip .lg{font-size:7px}}
+/* v2.1 · chips del horario más discretos en el móvil; los del plan del día, legibles */
+.achip .aab{font-style:normal;font-weight:800;color:var(--cor,#ff5f6d)}
+.enact{display:flex;flex-wrap:wrap;gap:6px}.enact .btn svg{color:var(--cor)}
+@media(max-width:899px){
+  .hk .achips{gap:3px;margin-top:3px}
+  .hk .achip{font-size:8.5px;font-weight:600;line-height:1.15;padding:2px 3px;border-radius:6px;border-width:1px}
+  .hk .achip .lg{font-size:7.5px}
+  .dacts .achip{font-size:12px;padding:5px 8px;gap:5px;border-radius:8px;text-align:left;justify-content:flex-start}
+  .dacts .achip svg{display:block;width:13px;height:13px}.dacts .achip em{display:inline;font-size:11px}
+}
+@media(max-width:375px){.hk .achip{font-size:8px;padding:2px}.hk .achip .lg{font-size:7px}}
+/* v2.1 · móvil en horizontal: la barra de menú pasa a la izquierda */
+@media(max-width:899px) and (orientation:landscape) and (max-height:540px){
+  nav.tabs{top:0;bottom:0;left:0;right:auto;width:calc(84px + env(safe-area-inset-left));border-top:0;border-right:1px solid var(--line);padding:6px 4px 6px max(4px,env(safe-area-inset-left));flex-direction:column;justify-content:center}
+  html.claro nav.tabs{border-top:0;border-right:1px solid var(--line)}
+  nav.tabs .in5{grid-template-columns:1fr;grid-auto-rows:auto;align-items:center;align-content:space-evenly;height:100%;max-width:none}
+  nav.tabs .in5 button{padding:4px 0;font-size:10.5px;gap:2px}
+  nav.tabs .in5 button svg{width:22px;height:22px}
+  nav.tabs .in5 .fab{width:48px;height:48px;margin:0 auto}
+  nav.tabs .in5 .fab svg{width:24px;height:24px}
+  .nbadge{right:calc(50% - 18px)}
+  .main{padding:0 16px 24px calc(100px + env(safe-area-inset-left))}
+  .toast{bottom:16px;left:calc(50% + 42px)}
+}
+.enact .btn{display:inline-flex;flex-direction:row;align-items:center;gap:5px;width:auto;height:auto;min-height:0;border-radius:999px;padding:6px 12px;font-size:13px;line-height:1.2}
+.enact .btn svg{width:14px;height:14px;margin:0}
+.eacts .achip{font-size:12px;padding:5px 8px;gap:5px;border-radius:8px;text-align:left;justify-content:flex-start}
+.eacts .achip svg{display:block;width:13px;height:13px}.eacts .achip em{display:inline;font-size:11px}
+.eacts .achip span,.eacts .achip .lg,.dacts .achip span,.dacts .achip .lg{font-size:inherit;letter-spacing:0}
+@media(max-width:899px) and (orientation:landscape) and (max-height:540px){.hk .achip{font-size:10px;padding:2px 5px}.hk .achip .lg{font-size:9px}}
