@@ -3,7 +3,7 @@ let CES={},CRITS=[],CRIT={},SABERES=[],BLOQUES={};
 const CURS=(ar=UI.area)=>(CURRICULO[ar]&&CURRICULO[ar].cursos)||['3','4'];
 const cursoN=(c,ar)=>c==='ambos'||c==='todos'?CURS(ar).map(x=>x+'.º').join(' y '):c+'.º';
 const dTxt=(cr,c)=>cr['d'+c]||'';
-const noAplica=(x,c,ar)=>x.solo4&&c===CURS(ar)[0];
+let noAplica=(x,c,ar)=>x.solo4&&c===CURS(ar)[0];
 const AREAS=Object.entries(CURRICULO).map(([id,a])=>({id,n:a.n+(a.g?' · '+a.g:''),corto:a.corto+(a.g?' · '+a.g:''),ciclo:a.g?`${a.g} · ${(a.cursos||[]).map(x=>x+'.º').join(' y ')}`:'2.º ciclo · 3.º y 4.º',on:1}));
 function setArea(id){const a=CURRICULO[id]||CURRICULO.mat;CES=a.ces;CRITS=a.crits;CRIT=Object.fromEntries(CRITS.map(x=>[x.c,x]));SABERES=a.saberes;BLOQUES=a.bloques;if(typeof UI!=='undefined'&&UI){if(!CRIT[UI.crit])UI.crit=CRITS[0].c;const cs=CURS(id);if(!cs.includes(UI.curso))UI.curso=cs[0];if(UI.filtro!=='todos'&&!cs.includes(UI.filtro))UI.filtro='todos';if(UI.pcurso&&UI.pcurso!=='todos'&&!cs.includes(UI.pcurso))UI.pcurso='todos'}}
 
@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.3.0';
+const APP_VERSION='2.4.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -479,7 +479,7 @@ function celdaModal(w,ini){
   const T=franjasT(),t=T.find(x=>x.ini===ini),fr0=normFr(((S.config.horario||{})[w]||[]).find(x=>x.ini===ini));let fr=Object.assign({ar:'',grupo:'tut',glab:'',lab:'',mis:'',ref:false,fijo:''},fr0||{});
   const clave=f=>!f.ar?'':CURRICULO[f.ar]&&f.grupo==='otro'?f.ar+'|'+f.glab:f.ar;
   const extra=fr.grupo==='otro'&&CURRICULO[fr.ar]&&!GRUPOS.some(([a,g])=>a===fr.ar&&g===fr.glab)?[[fr.ar,fr.glab]]:[];
-  const opciones=[['','— Libre —'],...Object.keys(CURRICULO).map(id=>[id,areaN(id)]),...GRUPOS.concat(extra).map(([a,g])=>[a+'|'+g,CURRICULO[a].corto+' · '+g]),['otro','Otra (lectura, recreo, inglés…)']];
+  const opciones=[['','— Libre —'],...[...new Set([...AREAS.map(x=>x.id),...(CURRICULO[fr.ar]?[fr.ar]:[])])].map(id=>[id,areaN(id)]),...GRUPOS.concat(extra).map(([a,g])=>[a+'|'+g,CURRICULO[a].corto+' · '+g]),['otro','Otra (lectura, recreo, inglés…)']];
   const opts=()=>opciones.map(([v,n])=>`<option value="${esc(v)}" ${clave(fr)===v?'selected':''}>${esc(n)}</option>`).join('');
   const det=()=>{if(!fr.ar)return '';if(!CURRICULO[fr.ar])return `<div class="field"><label>Qué es</label><input type="text" id="cLab" value="${esc(fr.lab)}" placeholder="Lectura, religión, inglés/biblioteca…"></div>`;
     const misOtro=fr.mis&&!MIS.includes(fr.mis);
@@ -543,7 +543,7 @@ function sesDatos(p,fr){const d=p?JSON.parse(JSON.stringify(p.d)):{};
   if(d.junto===undefined)d.junto=!d.c3&&!d.c4&&!!(d.ud||d.act||d.mat);
   if(!d.c3&&(d.ud||d.act||d.mat))d.c3={ud:d.ud||'',act:d.act||'',mat:d.mat||''};
   d.c3=Object.assign(BLK0(),d.c3||{});d.c4=Object.assign(BLK0(),d.c4||{});return d}
-const bloquesDe=(fr,d)=>{if(!esTut(fr))return [['g','']];const [a,b]=CURS(fr.ar);return d.junto?[['c3',`${a}.º y ${b}.º`]]:[['c3',a+'.º'],['c4',b+'.º']]};
+let bloquesDe=(fr,d)=>{if(!esTut(fr))return [['g','']];const [a,b]=CURS(fr.ar);return d.junto?[['c3',`${a}.º y ${b}.º`]]:[['c3',a+'.º'],['c4',b+'.º']]};
 const sesKey=(f,fr)=>`ses-${f}-h${(fr.ini||'').replace(':','')}`;
 function sesLegacy(f,fr){for(let k=0;k<12;k++){const p=S.prog[sesId(f,k)];if(p&&p.d&&p.d.ini===fr.ini)return p}return null}
 const sesP=(f,fr,i)=>{const p=S.prog[sesKey(f,fr)]||sesLegacy(f,fr);if(p)return p;const o=S.prog[sesId(f,i)];return o&&o.d&&!o.d.ini&&!o.d.notas?o:null};
@@ -1538,6 +1538,114 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-catar],[da
   if(d.catar){UI.catAr=d.catar;UI.catQ=''}if(d.catcu)UI.catCu=d.catcu;if(d.cattab)UI.catTab=d.cattab;render()},true);
 document.addEventListener('input',e=>{if(!e.target.matches||!e.target.matches('[data-catq]'))return;UI.catQ=e.target.value;const pos=e.target.selectionStart;render();const n=document.querySelector('[data-catq]');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(_){}}});
 
+
+/* ===================== v2.4 · mis grupos y áreas (configurables desde la app) ===================== */
+SECS.grupos={n:'Grupos y áreas',sub:'Tus grupos y sus áreas'};
+const AR_STATIC=Object.keys(CURRICULO);
+const CAT_DE_STATIC={mat:'MAT',len:'LCL',cmn:'CMN',pla:'EAR-P',cmn3:'CMN',pla3:'EAR-P'};
+const COL_BASE={MAT:'#e0913a',LCL:'#4f8fe0',CMN:'#58a85c',EAR:'#b968a6',EFI:'#e5484d',LEX:'#1f9fa6',VCE:'#8a6a3f'};
+const AB_CAT={MAT:'Mates',LCL:'Lengua',CMN:'C. Medio','EAR-P':'Plástica','EAR-M':'Música',EFI:'E. Física',ING:'Inglés',FR2:'Francés',VCE:'Valores'};
+const CORTO_CAT={MAT:'Matemáticas',LCL:'Lengua',CMN:'Conocimiento del Medio','EAR-P':'Plástica','EAR-M':'Música',EFI:'Educación Física',ING:'Inglés',FR2:'Francés',VCE:'Valores Cívicos y Éticos'};
+/* el catálogo se guarda en el dispositivo para poder montar las áreas sin conexión */
+try{const c=localStorage.getItem('evaluapp-cat');if(c&&!CAT)CAT=JSON.parse(c)}catch(e){}
+{const _c=cargarCatalogo;cargarCatalogo=function(){const fresh=!CAT;return _c().then(j=>{try{localStorage.setItem('evaluapp-cat',JSON.stringify(j))}catch(e){}if(fresh)construirAreas();return j})}}
+function cfgGrupos(){if(Array.isArray(S.config.grupos)&&S.config.grupos.length)return S.config.grupos;
+  return [{id:'tut',n:'3.º y 4.º',cursos:['3','4'],tut:true},{id:'c3',n:'3.er ciclo',cursos:['5','6'],tut:false}]}
+function cfgAreas(){if(Array.isArray(S.config.areas)&&S.config.areas.length)return S.config.areas;
+  return AR_STATIC.map(id=>({id,cat:CAT_DE_STATIC[id]||'',grupo:CURRICULO[id].g?'c3':'tut'}))}
+function guardarCfg(G,A){S.config.grupos=G;S.config.areas=A;saveConfig();construirAreas();render()}
+
+/* crea la definición de un área a partir del catálogo oficial */
+function areaDeCatalogo(cat,cursos){const A=CAT.areas[cat],B=CAT.base[A.base];const M={};
+  cursos.forEach(cu=>(B.crit[cu]||[]).forEach(([c,ce,tx,ti,re])=>{const x=M[c]=M[c]||{c,ce,t:ti||c,ok:[],r:['Aún no lo consigue, ni siquiera con ayuda.','Lo consigue con ayuda o de forma parcial.','Lo consigue de forma autónoma.','Lo consigue con soltura y lo aplica en otras situaciones.']};x['d'+cu]=re||tx;x['o'+cu]=tx;x.ok.push(cu)}));
+  const crits=Object.values(M).sort((a,b)=>{const p=s=>s.split('.').map(Number);const [a1,a2]=p(a.c),[b1,b2]=p(b.c);return a1-b1||a2-b2});
+  crits.forEach(x=>{if(x.ok.length===cursos.length)delete x.ok});
+  const cics=[...new Set(cursos.map(c=>String(Math.ceil(+c/2))))];const bloques={},saberes=[];
+  cics.forEach(ci=>{const S2=B.sab[ci];if(!S2)return;Object.assign(bloques,S2.bloques);const vistos=new Set();S2.items.forEach(([cod,t,ap])=>{const p=cod.split('.');const k=p.length>4?p.slice(0,4).join('.'):cod;if(vistos.has(k))return;vistos.add(k);saberes.push([k,p.length>4&&ap?ap:t])})});
+  return {n:A.n.replace(' · ',' – '),corto:CORTO_CAT[cat]||A.n,sen:A.sen,cursos:cursos.slice(),ces:B.cet||B.ces,crits,bloques,saberes,deCat:cat}}
+/* monta CURRICULO, la lista de áreas y los grupos según la configuración */
+function construirAreas(){
+  const G=cfgGrupos(),A=cfgAreas();
+  A.forEach(a=>{const g=G.find(x=>x.id===a.grupo);if(!g)return;
+    if(!AR_STATIC.includes(a.id)){if(!CAT||!CAT.areas[a.cat])return;CURRICULO[a.id]=areaDeCatalogo(a.cat,g.cursos);
+      const base=CAT.areas[a.cat].base;AREA_COL[a.id]=a.cat==='EAR-M'?'#7d5bd6':a.cat==='FR2'?'#2f8f9d':(COL_BASE[base]||'#7b8698');AB_AREA[a.id]=AB_CAT[a.cat]||CURRICULO[a.id].corto}
+    const C=CURRICULO[a.id];if(!C)return;
+    if(g.tut){if(!AR_STATIC.includes(a.id)){delete C.g;C.otroGrupo=false}}
+    else{C.g=g.n;C.otroGrupo=true}});
+  const act=A.filter(a=>!a.off&&CURRICULO[a.id]&&G.some(g=>g.id===a.grupo));
+  AREAS.length=0;act.forEach(a=>{const C=CURRICULO[a.id];AREAS.push({id:a.id,n:C.n+(C.g?' · '+C.g:''),corto:C.corto+(C.g?' · '+C.g:''),ciclo:(C.g?C.g+' · ':'')+CURS(a.id).map(x=>x+'.º').join(' y '),on:1})});
+  AR_TUT.length=0;AR_CIC.length=0;act.forEach(a=>{const g=G.find(x=>x.id===a.grupo);(g.tut?AR_TUT:AR_CIC).push(a.id)});
+  if(!AREAS.some(x=>x.id===UI.area)&&AREAS[0]){UI.area=AREAS[0].id}
+  if(AREAS.length)setArea(UI.area)}
+/* un criterio que solo existe en uno de los cursos del grupo */
+noAplica=(x,c,ar)=>x&&((x.ok&&!x.ok.includes(c))||(x.solo4&&c===CURS(ar)[0]));
+/* grupos de un solo curso: un único bloque en la sesión */
+bloquesDe=(fr,d)=>{if(!esTut(fr))return [['g','']];const cs=CURS(fr.ar);if(cs.length<2)return [['c3',cs[0]+'.º']];const [a,b]=cs;return d.junto?[['c3',`${a}.º y ${b}.º`]]:[['c3',a+'.º'],['c4',b+'.º']]};
+
+/* ---- pantalla «Grupos y áreas» ---- */
+const cursosTxt=cs=>cs.map(c=>c+'.º').join(' y ');
+function vGrupos(){
+  const G=cfgGrupos(),A=cfgAreas();
+  const card=g=>{const as=A.filter(a=>a.grupo===g.id);const vivos=as.filter(a=>!a.off),arch=as.filter(a=>a.off);
+    const nal=S.config.alumnos.filter(al=>g.cursos.includes(al.curso)).length;
+    return `<div class="card pad grpc"><div class="grph"><div><b>${supO(esc(g.n))}</b><span>${cursosTxt(g.cursos)} · ${nal} ${nal===1?'alumno':'alumnos'}${g.tut?' · <i class="tutb">Tutoría</i>':''}</span></div><button class="btn sm g" data-grped="${g.id}">${ICONS.pen} Editar</button></div>
+     <div class="grpas">${vivos.map(a=>`<span class="grpa" style="--c:${arCol(a.id)}"><b>${esc((CURRICULO[a.id]||{}).corto||a.id)}</b><button data-arquita="${a.id}" aria-label="Archivar" title="Archivar">×</button></span>`).join('')||'<span class="muted small">Sin áreas todavía.</span>'}</div>
+     ${arch.length?`<div class="small muted grparch">Archivadas: ${arch.map(a=>`<button class="lnk" data-arvuelve="${a.id}">${esc((CURRICULO[a.id]||{}).corto||a.id)} (recuperar)</button>`).join(' ')}</div>`:''}
+     <button class="btn sm pri2" data-arnueva="${g.id}" style="margin-top:10px">${ICONS.plus} Añadir área</button></div>`};
+  return ptitle('Grupos y áreas','Configura lo que impartes')
+   +`<p class="small muted" style="margin:-4px 2px 12px">Cada grupo reúne uno o dos cursos. Sus áreas salen del currículo oficial, con los criterios ya resumidos. Archivar un área la oculta pero conserva sus notas.</p>`
+   +G.map(card).join('')+`<button class="btn pri2 grpnew" data-grpnuevo>${ICONS.plus} Nuevo grupo</button>`}
+VIEWS.grupos=vGrupos;
+{const _b=VIEWS.ajustes;VIEWS.ajustes=()=>_b()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.alumno,'var(--a-alumnado)','Grupos y áreas','Tus grupos, sus cursos y las áreas que impartes','data-tab="grupos"')}</div>`}
+const PARES=[['1'],['2'],['1','2'],['3'],['4'],['3','4'],['5'],['6'],['5','6']];
+function grupoModal(id){const G=JSON.parse(JSON.stringify(cfgGrupos())),A=cfgAreas();const g=G.find(x=>x.id===id)||{id:'g'+uid().slice(0,6),n:'',cursos:[],tut:false};const nuevo=!G.some(x=>x.id===g.id);
+  const usados=G.filter(x=>x.id!==g.id).flatMap(x=>x.cursos);const tieneAr=A.some(a=>a.grupo===g.id);
+  modal(`<h3>${nuevo?'Nuevo grupo':'Editar grupo'}</h3>
+   <div class="field"><label>Nombre</label><input id="gN" value="${esc(g.n)}" placeholder="P. ej. 5.º y 6.º, 3.er ciclo, 1.º A"></div>
+   <div class="field"><label>Cursos</label><select id="gC" ${tieneAr?'disabled':''}>${PARES.map(p=>{const k=p.join(',');const choca=p.some(c=>usados.includes(c));return `<option value="${k}" ${g.cursos.join(',')===k?'selected':''} ${choca?'disabled':''}>${cursosTxt(p)}${choca?' (ya en otro grupo)':''}</option>`}).join('')}</select>${tieneAr?'<div class="small muted" style="margin-top:4px">Para cambiar los cursos, archiva antes sus áreas.</div>':''}</div>
+   <label class="chk"><input type="checkbox" id="gT" ${g.tut?'checked':''}> Es mi tutoría (sus medias salen en Inicio)</label>
+   <div class="btns" style="justify-content:space-between;margin-top:14px">${!nuevo&&!A.some(a=>a.grupo===g.id&&!a.off)?'<button class="btn danger" id="gDel">Quitar grupo</button>':'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="gOk">Guardar</button></span></div>`,(m,close)=>{
+    m.querySelector('#gOk').onclick=()=>{const n=m.querySelector('#gN').value.trim();if(!n){toast('Pon un nombre');return}
+      g.n=n.replace(/\b3\.er\b/g,'3.er');g.tut=m.querySelector('#gT').checked;if(!tieneAr)g.cursos=m.querySelector('#gC').value.split(',');
+      if(g.cursos.some(c=>usados.includes(c))){toast('Esos cursos ya están en otro grupo');return}
+      if(nuevo)G.push(g);else G[G.findIndex(x=>x.id===g.id)]=g;close();guardarCfg(G,JSON.parse(JSON.stringify(A)))};
+    const d=m.querySelector('#gDel');if(d)d.onclick=()=>{close();guardarCfg(G.filter(x=>x.id!==g.id),A.filter(a=>a.grupo!==g.id||a.off))};
+  })}
+function areaNuevaModal(gid){const g=cfgGrupos().find(x=>x.id===gid);if(!g)return;
+  const pintar=()=>{if(!CAT)return '<p class="muted">Cargando el currículo…</p>';const A=cfgAreas();
+    const L=Object.entries(CAT.areas).filter(([k,a])=>{const cs=(a.cursos||CAT.base[a.base].cursos).map(String);return g.cursos.some(c=>cs.includes(c))});
+    return `<div class="lcard flat">${L.map(([k,a])=>{const ya=A.some(x=>x.grupo===gid&&!x.off&&(x.cat===k));return lrow(ICONS.plus,COL_BASE[a.base]||'var(--a-prog)',esc(a.n),ya?'Ya está en este grupo':`Criterios de ${cursosTxt(g.cursos)}`,ya?'disabled':`data-arcat="${k}"`)}).join('')}</div>`};
+  modal(`<h3>Añadir área a ${supO(esc(g.n))}</h3><div id="anL">${pintar()}</div>`,(m,close)=>{
+    if(!CAT)cargarCatalogo().then(()=>{const l=m.querySelector('#anL');if(l)l.innerHTML=pintar()}).catch(()=>{const l=m.querySelector('#anL');if(l)l.innerHTML='<p class="muted">No se pudo cargar el currículo. Revisa la conexión.</p>'});
+    m.addEventListener('click',e=>{const b=e.target.closest('[data-arcat]');if(!b)return;const cat=b.dataset.arcat,A=JSON.parse(JSON.stringify(cfgAreas()));
+      const arch=A.find(x=>x.grupo===gid&&x.cat===cat&&x.off);if(arch){delete arch.off}
+      else{let id=cat.toLowerCase().replace(/[^a-z0-9]/g,'')+'-'+gid;let k=2;while(CURRICULO[id]||A.some(x=>x.id===id))id=id.replace(/(-\d+)?$/,'-'+(k++));A.push({id,cat,grupo:gid})}
+      close();guardarCfg(JSON.parse(JSON.stringify(cfgGrupos())),A);toast('Área añadida')})})}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-grped],[data-grpnuevo],[data-arnueva],[data-arquita],[data-arvuelve]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();const d=t.dataset;
+  if(d.grped)return grupoModal(d.grped);if(d.grpnuevo!==undefined)return grupoModal(null);if(d.arnueva)return areaNuevaModal(d.arnueva);
+  const A=JSON.parse(JSON.stringify(cfgAreas())),G=JSON.parse(JSON.stringify(cfgGrupos()));
+  if(d.arquita){const a=A.find(x=>x.id===d.arquita);if(!a)return;if(A.filter(x=>!x.off).length<=1){toast('Debe quedar al menos un área');return}
+    confirmar(`¿Archivar ${(CURRICULO[a.id]||{}).corto||a.id}? Dejará de verse, pero sus notas y su programación se conservan.`,'Archivar',()=>{a.off=true;guardarCfg(G,A)});return}
+  if(d.arvuelve){const a=A.find(x=>x.id===d.arvuelve);if(a){delete a.off;guardarCfg(G,A)}}},true);
+/* el selector de franjas del horario solo ofrece áreas activas */
+
+
+/* barra de áreas y pestañas de Alumnado agrupadas por grupo */
+areaBar=function(ars){ars=ars||[...AR_TUT,...AR_CIC];const G=cfgGrupos(),A=cfgAreas();
+  const b=a=>`<button class="${a===UI.area?'on':''}" data-setar="${a}" style="--c:${arCol(a)}">${esc(abA(a))}</button>`;
+  const partes=G.map((g,i)=>{const L=ars.filter(id=>(A.find(x=>x.id===id)||{}).grupo===g.id);if(!L.length)return '';return (i||!g.tut?`<span class="arsep">${supO(esc(g.n))}</span>`:'')+L.map(b).join('')}).join('');
+  return `<div class="arbar">${partes}</div>`};
+const arsGrupo=gid=>{const A=cfgAreas();return [...AR_TUT,...AR_CIC].filter(id=>(A.find(x=>x.id===id)||{}).grupo===gid)};
+{const _va=vAlumnado22;vAlumnado22=function(){const G=cfgGrupos();if(!G.some(g=>g.id===UI.alnGrp))UI.alnGrp=(G.find(g=>g.tut)||G[0]||{}).id;
+  const g=G.find(x=>x.id===UI.alnGrp)||{n:''};
+  /* el código anterior distinguía 'tut' y 'cic'; aquí se sustituye por el grupo elegido */
+  const tmpT=AR_TUT.slice(),tmpC=AR_CIC.slice();const ars=arsGrupo(UI.alnGrp);
+  const cambia=UI.alnTab==='res';if(cambia){AR_TUT.length=0;AR_TUT.push(...ars);AR_CIC.length=0}const prev=UI.alnGrp;UI.alnGrp='tut';
+  let h;try{h=_va()}finally{UI.alnGrp=prev;AR_TUT.length=0;AR_TUT.push(...tmpT);AR_CIC.length=0;AR_CIC.push(...tmpC)}
+  h=h.replace(/<div class="pills grp">[\s\S]*?<\/div>/,`<div class="pills grp">${G.map(x=>`<button data-alngrp="${x.id}" class="${UI.alnGrp===x.id?'on':''}">${supO(esc(x.n))}</button>`).join('')}</div>`)
+     .replace(/(<div class="psub">)(Tutoría|3\.<sup>er<\/sup> ciclo)/,`$1${supO(esc(g.n))}`);
+  return h};VIEWS.alumnado=vAlumnado22}
+
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
-loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
+loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a)UI.area=a}catch(e){}construirAreas();if(!AREAS.some(x=>x.id===UI.area))UI.area=(AREAS[0]||{id:'mat'}).id;setArea(UI.area);if(!CAT&&cfgAreas().some(a=>!AR_STATIC.includes(a.id)))cargarCatalogo().then(()=>{construirAreas();render()}).catch(()=>{});UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
 setTimeout(cargarCabRemota,1500);

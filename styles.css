@@ -891,3 +891,15 @@ details.catcet>summary{list-style:none;display:flex;justify-content:space-betwee
 details.catcet>summary::-webkit-details-marker{display:none}
 details.catcet[open] .catmas svg{transform:rotate(180deg)}
 details.catcet>summary b{font-size:15px;color:var(--pri,#5b63e8)}
+/* ===================== v2.4 · grupos y áreas ===================== */
+.grpc{margin-bottom:12px}
+.grph{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.grph b{font-size:16px;display:block}.grph span{font-size:12.5px;color:var(--muted)}
+.tutb{font-style:normal;font-weight:800;color:var(--pri,#5b63e8)}
+.grpas{display:flex;flex-wrap:wrap;gap:6px}
+.grpa{display:inline-flex;align-items:center;gap:4px;border-radius:99px;padding:4px 4px 4px 12px;background:color-mix(in srgb,var(--c) 12%,var(--card));border:1.5px solid color-mix(in srgb,var(--c) 40%,transparent);color:var(--c);font-size:13px}
+.grpa button{border:0;background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);width:22px;height:22px;border-radius:50%;font-size:15px;line-height:1;cursor:pointer}
+.grparch{margin-top:8px}
+.grpc .btn,.grpnew{display:inline-flex;flex-direction:row;align-items:center;gap:6px;width:auto;height:auto;min-height:0;border-radius:99px;padding:8px 14px;font-size:13.5px;line-height:1.2}
+.grpc .btn svg,.grpnew svg{width:16px;height:16px;margin:0}
+.grpnew{margin:4px 0 24px}
