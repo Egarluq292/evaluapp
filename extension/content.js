@@ -29,6 +29,8 @@
   /* ---------- estado ---------- */
   let tabla = null; // { area, curso, tri, gen, datos:{ 'Apellidos, Nombre': { 'MAT.3.1.1': '7.67' } } }
   let porNombre = {};
+  let nombresTabla = [];
+  const tituloSeneca = () => { const h = $('.modal-title', ventana() || document); return h ? (h.childNodes[0] ? h.childNodes[0].textContent : h.textContent).trim() : ''; };
   let sobrescribir = false;
   let ocupado = false;
 
@@ -36,9 +38,11 @@
     const r = await browser.runtime.sendMessage({ tipo: 'leer' });
     if (!r || r.error) throw new Error(r ? r.error : 'No se pudo leer la hoja.');
     const clave = claveActividad();
-    tabla = r.senPend[clave] || null;
-    porNombre = {};
-    if (tabla) Object.entries(tabla.datos || {}).forEach(([n, o]) => { porNombre[norm(n)] = o; });
+    const sp = r.senPend || {};
+    const fuentes = sp.ult ? [sp.ult] : Object.values(sp);
+    tabla = fuentes.length ? fuentes[0] : null;
+    porNombre = {}; nombresTabla = [];
+    fuentes.forEach(t => Object.entries(t.datos || {}).forEach(([n, o]) => { const k = norm(n); if (!porNombre[k]) nombresTabla.push(n); porNombre[k] = Object.assign(porNombre[k] || {}, o); }));
     return clave;
   }
 
@@ -112,7 +116,7 @@
     panel(`<h3>Evalúapp</h3><div class="evp-box">Leyendo tus notas de la hoja…</div>`);
     let clave;
     try { clave = await leerTabla(); } catch (e) { return panel(`<h3>Evalúapp</h3><div class="evp-box evp-err">${esc(e.message)}</div><button data-evp="abrir">Reintentar</button><button data-evp="conectar">Cambiar la conexión</button>`); }
-    if (!tabla) return panel(`<h3>Evalúapp</h3><div class="evp-box evp-warn">Esta actividad es de <b>${esc(clave)}</b> y en tu hoja no hay notas enviadas para ese código.<br>En Evalúapp: Séneca → elige el área y el curso → «Copiar para AutoNotas» → <b>«Enviar a la extensión»</b>.</div><button data-evp="abrir">Volver a leer</button>`);
+    if (!tabla) return panel(`<h3>Evalúapp</h3><div class="evp-box evp-warn">En tu hoja no hay ninguna actividad enviada.<br>En Evalúapp: Evaluar → abre la actividad → «Pasar a Séneca» → <b>«Enviar a la extensión»</b>.</div><button data-evp="abrir">Volver a leer</button>`);
     resumen(clave);
   }
 
@@ -120,14 +124,17 @@
     const nombres = listaAlumnos();
     const conNotas = nombres.filter(n => porNombre[norm(n)]);
     const sinNotas = nombres.filter(n => !porNombre[norm(n)]);
-    const enTabla = Object.keys(tabla.datos || {});
+    const enTabla = nombresTabla;
     const noEnSeneca = enTabla.filter(n => !nombres.some(x => norm(x) === norm(n)));
     const cods = new Set(casillas().map(c => c.cod));
-    const codsTabla = new Set(enTabla.flatMap(n => Object.keys(tabla.datos[n])));
+    const codsTabla = new Set(Object.values(porNombre).flatMap(o => Object.keys(o)));
     const comunes = [...codsTabla].filter(c => cods.has(c));
     const gen = tabla.gen ? new Date(tabla.gen).toLocaleString('es-ES', { day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-    panel(`<h3>Evalúapp · ${esc(clave)}</h3>
-      <p>${esc(tabla.area || '')} · ${esc(tabla.curso || '')}.º · ${esc(tabla.tri || '')}${gen ? ` · enviado el ${esc(gen)}` : ''}</p>
+    const tit = tabla.titulo || '', tS = tituloSeneca();
+    const cursos = tabla.cursos ? tabla.cursos.map(c => c + '.º').join(' y ') : (tabla.curso ? tabla.curso + '.º' : '');
+    panel(`<h3>Evalúapp${tit ? ' · «' + esc(tit) + '»' : ' · ' + esc(clave)}</h3>
+      <p>${esc(tabla.area || '')}${cursos ? ' · ' + esc(cursos) : ''}${tabla.tri ? ' · ' + esc(tabla.tri) : ''}${gen ? ` · enviado el ${esc(gen)}` : ''}</p>
+      ${tit && tS && norm(tit) !== norm(tS) ? `<div class="evp-box evp-warn">Ojo: en Evalúapp la actividad se llama «${esc(tit)}» y en Séneca tienes abierta «${esc(tS)}». Comprueba que es la misma.</div>` : ''}
       ${aviso}
       <div class="evp-box">
         <b>${conNotas.length}</b> de ${nombres.length} alumnos de esta actividad tienen notas en Evalúapp.<br>
@@ -149,7 +156,7 @@
     ocupado = true; const log = [];
     try {
       for (let k = 0; k < total; k++) {
-        panel(`<h3>Evalúapp · ${esc(clave)}</h3><div class="evp-box">Alumno ${k + 1} de ${total}: ${esc(alumnoActual())}…</div>`);
+        panel(`<h3>Evalúapp</h3><div class="evp-box">Alumno ${k + 1} de ${total}: ${esc(alumnoActual())}…</div>`);
         const r = rellenarActual(); log.push(r);
         await espera(250);
         const sigue = await guardarYEsperar();
@@ -163,7 +170,7 @@
 
   function informe(clave, log, error) {
     const puestas = log.reduce((a, r) => a + r.puestas, 0);
-    panel(`<h3>Evalúapp · ${esc(clave)}</h3>
+    panel(`<h3>Evalúapp</h3>
       ${error ? `<div class="evp-box evp-err">${esc(error)}</div>` : ''}
       <div class="evp-box evp-ok"><b>${puestas}</b> ${puestas === 1 ? 'nota puesta' : 'notas puestas'} en ${log.filter(r => r.puestas).length} alumnos.</div>
       <div class="evp-box"><ul>${log.map(r => `<li>${esc(r.alumno)}: ${r.sinAlumno ? 'sin notas en Evalúapp' : `${r.puestas} puestas${r.yaTenian ? `, ${r.yaTenian} ya tenían nota` : ''}`}</li>`).join('')}</ul></div>

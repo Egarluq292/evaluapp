@@ -12,9 +12,9 @@ const LVC=['var(--l0)','var(--l1)','var(--l2)','var(--l3)','var(--l4)'];
 const TRI_N=['1.<sup>er</sup> trim.','2.º trim.','3.<sup>er</sup> trim.','Curso'];
 
 /* ============ ESTADO ============ */
-const DEF_CONFIG=()=>({cabecera:'acuarela',alumnos:[],notas:[3,5,7,9],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']],horario:{1:[],2:[],3:[],4:[],5:[]},udActual:{},avisoSust:''});
+const DEF_CONFIG=()=>({cabecera:'acuarela',alumnos:[],notas:[3,5,7,9],notas5:[2,4,6,8,10],tri:[['2026-09-01','2026-12-31'],['2027-01-01','2027-03-31'],['2027-04-01','2027-06-30']],horario:{1:[],2:[],3:[],4:[],5:[]},udActual:{},avisoSust:''});
 let S={config:DEF_CONFIG(),months:{},prog:{}};
-const PROGT=['ud','ses'];
+const PROGT=['ud','ses','act'];
 const toWire=p=>({id:p.id,t:p.t,ar:p.ar,f:p.f||'',a:'',c:'',txt:JSON.stringify(p.d||{})});
 function fromWire(r){let d={};try{d=JSON.parse(r.txt||'{}')}catch(e){}return {id:r.id,t:r.t,ar:r.ar||'mat',f:r.f||'',d}}
 const today=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.8.0';
+const APP_VERSION='1.9.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -77,10 +77,20 @@ function inPeriod(f){if(UI.tri===3)return true;const [a,b]=S.config.tri[UI.tri];
 const periodRegs=()=>allRegs().filter(r=>inPeriod(r.f));
 const aplica=(al,c)=>!noAplica(CRIT[c],al.curso);
 const alumnosArea=()=>alumnosOrd().filter(a=>CURS().includes(a.curso));
-function nivelMedio(regs,a,c){const v=regs.filter(r=>r.t==='niv'&&r.a===a&&r.c===c).map(r=>r.n);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null}
+/* Notas: 'niv' = registro antiguo (4 niveles); 'nac' = nota de una actividad (5 tramos de Séneca, en txt:{act,n}) */
+const esNota=r=>r.t==='niv'||r.t==='nac';
+const _nacC=new Map();function nacD(r){let v=_nacC.get(r);if(!v){try{v=JSON.parse(r.txt||'{}')}catch(e){v={}}_nacC.set(r,v)}return v}
+const notas5=()=>((S.config.notas5&&S.config.notas5.length===5)?S.config.notas5:[2,4,6,8,10]).map(Number);
+function notaReg(r){if(r.t==='nac'){const n=+nacD(r).n;return n>=1&&n<=5?notas5()[n-1]:null}return r.t==='niv'?aNota(r.n):null}
+function notaCrit(regs,a,c){const v=regs.filter(r=>esNota(r)&&r.a===a&&r.c===c).map(notaReg).filter(x=>x!=null);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null}
+const _NA=[[1,1],[5,2],[7,3],[8.5,3.75],[10,4]];
+function _lin(x,A,i,j){for(let k=1;k<A.length;k++){if(x<=A[k][i]){const [a,b]=[A[k-1],A[k]];return a[j]+(b[j]-a[j])*(x-a[i])/(b[i]-a[i])}}return A[A.length-1][j]}
+const notaNv=n=>n==null?null:_lin(Math.max(1,Math.min(10,n)),_NA,0,1);
+const nvNota=v=>v==null?null:_lin(Math.max(1,Math.min(4,v)),_NA,1,0);
+function nivelMedio(regs,a,c){return notaNv(notaCrit(regs,a,c))}
 function aNota(nv){if(nv==null)return null;const n=S.config.notas.map(Number);const i=Math.min(Math.floor(nv),3);const lo=Math.max(i,1);const f=nv-lo;const val=lo>=4?n[3]:n[lo-1]+(n[Math.min(lo,3)]-n[lo-1])*f;return Math.max(1,Math.min(10,val))}
 const colorNv=nv=>nv==null?LVC[0]:LVC[nv<2?1:nv<3?2:nv<3.75?3:4];
-function mediaAlumno(regs,al){const ns=CRITS.filter(x=>aplica(al,x.c)).map(x=>aNota(nivelMedio(regs,al.id,x.c))).filter(v=>v!=null);return ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:null}
+function mediaAlumno(regs,al){const ns=CRITS.filter(x=>aplica(al,x.c)).map(x=>notaCrit(regs,al.id,x.c)).filter(v=>v!=null);return ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:null}
 const alumnosOrd=()=>S.config.alumnos.slice().sort((a,b)=>a.curso.localeCompare(b.curso)||a.nombre.localeCompare(b.nombre,'es'));
 const mk=f=>f.slice(0,7);
 
@@ -128,7 +138,7 @@ function resumen(){
   const als=S.config.alumnos,regs=periodRegs();
   let tot=0,ev=0;const alertAl=new Set();
   als.forEach(al=>CRITS.forEach(x=>{if(!aplica(al,x.c))return;tot++;const v=nivelMedio(regs,al.id,x.c);if(v!=null){ev++;if(v<2)alertAl.add(al.id)}}));
-  const sinEval=CRITS.filter(x=>als.some(al=>aplica(al,x.c))&&!regs.some(r=>r.t==='niv'&&r.c===x.c)).length;
+  const sinEval=CRITS.filter(x=>als.some(al=>aplica(al,x.c))&&!regs.some(r=>esNota(r)&&r.c===x.c)).length;
   return {als:als.length,tot,ev,alertas:alertAl.size,sinEval,pct:tot?Math.round(ev/tot*100):0};
 }
 function areaModal(){
@@ -184,7 +194,7 @@ function vClase(){
   const byAl={};alerts.forEach(([al,c,v])=>{(byAl[al.id]=byAl[al.id]||{al,l:[]}).l.push([c,v])});
   const media=als.map(al=>mediaAlumno(regs,al)).filter(v=>v!=null);
   const showN=UI.modo==='nota';
-  const cellTxt=v=>v==null?'·':showN?aNota(v).toFixed(1).replace('.',','):v.toFixed(1).replace('.',',');
+  const cellTxt=v=>v==null?'·':showN?nvNota(v).toFixed(1).replace('.',','):v.toFixed(1).replace('.',',');
   let ceRow='',lastCe=0;CRITS.forEach(x=>{ceRow+=`<th class="ceh">${x.ce!==lastCe?'CE'+x.ce:''}</th>`;lastCe=x.ce});
   return `<h2>Clase · ${TRI_N[UI.tri]}</h2>
   <div class="kpis">
@@ -233,7 +243,7 @@ function vAlumno(){
   </div>
   <div class="grid2" style="margin-top:12px">
    <div class="card"><h3>Por competencia específica</h3><div class="bars">${ceAvg.map(([ce,v])=>`<div class="b"><span>CE${ce} ${CES[ce]}</span><div class="track"><div class="fill" style="width:${v==null?0:v/4*100}%;background:${colorNv(v)}"></div></div><b>${v==null?'–':v.toFixed(1).replace('.',',')}</b></div>`).join('')}</div></div>
-   <div class="card"><h3>Criterios</h3>${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'var(--dim)':'var(--on-lv)'}" data-cell="${al.id}|${x.c}">${v==null?'·':aNota(v).toFixed(0)}</button></div>`}).join('')}</div>
+   <div class="card"><h3>Criterios</h3>${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'var(--dim)':'var(--on-lv)'}" data-cell="${al.id}|${x.c}">${v==null?'·':nvNota(v).toFixed(0)}</button></div>`}).join('')}</div>
   </div>
   <div class="card" style="margin-top:12px"><h3>Observaciones</h3>${obs.length?obs.map(o=>`<div class="obs"><div class="meta"><span>${fmtF(o.f)}${o.c?' · '+o.c+' '+esc(CRIT[o.c]?CRIT[o.c].t:''):''}</span><a href="#" data-del="${o.id}" style="color:var(--l1)">Borrar</a></div>${esc(o.txt)}</div>`).join(''):'<div class="muted small">Sin observaciones en este periodo.</div>'}</div>`;
 }
@@ -254,7 +264,7 @@ function informeTexto(al){
 function senecaData(curso){
   const regs=periodRegs();const als=alumnosOrd().filter(a=>a.curso===curso);
   const crs=CRITS.filter(x=>!noAplica(x,curso));
-  return {als,crs,rows:als.map(al=>crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return v==null?'':String(Math.round(aNota(v)))}))};
+  return {als,crs,rows:als.map(al=>crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return v==null?'':String(Math.round(nvNota(v)))}))};
 }
 function vSeneca(){
   const {als,crs,rows}=senecaData(UI.curso);
@@ -716,7 +726,7 @@ function vAvisos(){
 /* ---- acciones rápidas y menú ---- */
 function quickSheet(){
   modal(`<h3>Acciones rápidas</h3><div class="lcard flat">
-   ${lrow(ICONS.evaluar,'var(--a-evaluar)','Evaluación rápida','Evalúa el criterio que tienes entre manos','data-q="eval"')}
+   ${lrow(ICONS.evaluar,'var(--a-evaluar)','Nueva actividad evaluable','Con sus criterios, como en Séneca','data-q="act"')}
    ${lrow(ICONS.nota,'var(--a-alumno)','Nueva observación','Anota algo de un alumno','data-q="obs"')}
    ${lrow(ICONS.cal,'var(--teal)','Preparar el diario de hoy',may1(fLarga(today())),'data-q="dia"')}
    ${lrow(ICONS.layers,'var(--a-prog)','Nueva unidad o situación',supO(esc(areaN(UI.area))),'data-q="ud"')}</div>`,(m,close)=>{
@@ -735,7 +745,7 @@ function drawer(){
    <div class="sync" style="margin-top:14px">${syncHTML()}</div>`,(m,close)=>{m.classList.add('drawer');m.addEventListener('click',e=>{if(e.target.closest('[data-tab]'))close()})});
 }
 /* ---- evaluar ---- */
-function pctCrit(c,als){const regs=periodRegs().filter(r=>r.t==='niv'&&r.c===c);const ap=als.filter(al=>aplica(al,c));const ev=ap.filter(al=>regs.some(r=>r.a===al.id)).length;return ap.length?Math.round(ev/ap.length*100):0}
+function pctCrit(c,als){const regs=periodRegs().filter(r=>esNota(r)&&r.c===c);const ap=als.filter(al=>aplica(al,c));const ev=ap.filter(al=>regs.some(r=>r.a===al.id)).length;return ap.length?Math.round(ev/ap.length*100):0}
 const vEvaluarDet=vEvaluar;
 function vEvaluar13(){
   const als=alumnosFiltro();
@@ -771,10 +781,10 @@ function vAlumno13(){
   const sw=`<div class="stucard"><button class="iconbtn ghost" data-alnav="${(i-1+als.length)%als.length}" aria-label="Anterior" style="transform:rotate(180deg)">${ICONS.chev}</button><span class="av big">${esc(inic(al.nombre))}</span><span class="lt"><b>${esc(al.nombre)}</b><span>${al.curso}.º de Primaria</span></span><button class="iconbtn ghost" data-alnav="${(i+1)%als.length}" aria-label="Siguiente">${ICONS.chev}</button></div>`;
   let body='';
   if(UI.alTab==='ficha'){
-    body=`<div class="kpis"><div class="kpi"><b style="color:${m!=null&&m<5?'var(--l1)':'var(--acc)'}">${m==null?'–':m.toFixed(1).replace('.',',')}</b><span>media orientativa</span></div><div class="kpi"><b>${evs}/${crs.length}</b><span>criterios evaluados</span></div><div class="kpi"><b>${regs.filter(r=>r.t==='niv'&&r.a===al.id).length}</b><span>registros</span></div><div class="kpi"><b>${obs.length}</b><span>observaciones</span></div></div>
+    body=`<div class="kpis"><div class="kpi"><b style="color:${m!=null&&m<5?'var(--l1)':'var(--acc)'}">${m==null?'–':m.toFixed(1).replace('.',',')}</b><span>media orientativa</span></div><div class="kpi"><b>${evs}/${crs.length}</b><span>criterios evaluados</span></div><div class="kpi"><b>${regs.filter(r=>esNota(r)&&r.a===al.id).length}</b><span>registros</span></div><div class="kpi"><b>${obs.length}</b><span>observaciones</span></div></div>
      <div class="lcard" style="margin-top:12px">${lrow(ICONS.nota,'var(--a-alumno)','Nueva observación','Anótala con fecha y criterio',`data-obs="${al.id}"`)}${lrow(ICONS.chart,'var(--a-clase)','Progreso y evidencias','Competencias y observaciones','data-altab="seg"')}${lrow(ICONS.doc,'var(--a-seneca)','Copiar informe',`Texto para tutorías · ${supO(esc(areaN(UI.area)))}`,'data-act="informe"')}${lrow(ICONS.pen,'var(--a-ajustes)','Editar alumno','Nombre o iniciales y curso',`data-edal="${al.id}"`)}</div>`;
   }else if(UI.alTab==='eval'){
-    body=`<div class="card">${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'var(--dim)':'var(--on-lv)'}" data-cell="${al.id}|${x.c}">${v==null?'·':aNota(v).toFixed(0)}</button></div>`}).join('')}</div>`;
+    body=`<div class="card">${crs.map(x=>{const v=nivelMedio(regs,al.id,x.c);return `<div class="crow"><span class="code">${x.c}</span><span>${esc(x.t)}</span><button class="pill" style="border:0;background:${colorNv(v)};color:${v==null?'var(--dim)':'var(--on-lv)'}" data-cell="${al.id}|${x.c}">${v==null?'·':nvNota(v).toFixed(0)}</button></div>`}).join('')}</div>`;
   }else{
     const ceAvg=Object.keys(CES).map(ce=>{const vs=crs.filter(x=>x.ce==ce).map(x=>nivelMedio(regs,al.id,x.c)).filter(v=>v!=null);return [ce,vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null]});
     body=`<div class="card"><h3>Por competencia específica</h3><div class="bars">${ceAvg.map(([ce,v])=>`<div class="b"><span>CE${ce} ${CES[ce]}</span><div class="track"><div class="fill" style="width:${v==null?0:v/4*100}%;background:${colorNv(v)}"></div></div><b>${v==null?'–':v.toFixed(1).replace('.',',')}</b></div>`).join('')}</div></div>
@@ -790,7 +800,7 @@ function nombresSen(){let loc={};try{loc=JSON.parse(localStorage.getItem('evalua
   if(Object.keys(loc).length){S.config.nombresSen=Object.assign({},loc,S.config.nombresSen||{});saveConfig();try{localStorage.removeItem('evaluapp-nombres')}catch(e){}}
   return Object.assign({},S.config.nombresSen||{})}
 function setNombresSen(o){S.config.nombresSen=o;saveConfig()}
-const nota2=v=>v==null?'':aNota(v).toFixed(2).replace('.',',');
+const nota2=v=>v==null?'':nvNota(v).toFixed(2).replace('.',',');
 function autoNotas(curso){const regs=periodRegs(),N=nombresSen(),als=alumnosOrd().filter(a=>a.curso===curso);const crs=CRITS.filter(x=>!noAplica(x,curso));
   const EXP=UI.area==='pla'||UI.area==='pla3'?{EP:['3.1','3.2','4.2']}:{};const cols=crs.flatMap(x=>(EXP[x.c]||[x.c]).map(o=>({c:x.c,o})));
   const cods=cols.map(k=>`${senPref(UI.area)}.${curso}.${k.o}`);const filas=[],sinNombre=[],sinNotas=[];
@@ -864,7 +874,7 @@ function render(){
 function cellModal(a,c){
   const al=S.config.alumnos.find(x=>x.id===a),cr=CRIT[c];
   const rs=periodRegs().filter(r=>r.a===a&&r.c===c).sort((x,y)=>y.f.localeCompare(x.f));
-  modal(`<h3>${esc(al.nombre)} · ${c} ${esc(cr.t)}</h3>${rs.length?rs.map(r=>`<div class="hist"><span>${fmtF(r.f)}</span><span style="flex:1">${r.t==='niv'?`<span class="tag" style="background:${LVC[r.n]}">${r.n} · ${LVN[r.n]}</span>`:esc(r.txt)}</span><button class="btn sm danger" data-delm="${r.id}">Borrar</button></div>`).join(''):'<div class="muted">Sin registros en este periodo.</div>'}<div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const d=e.target.closest('[data-delm]');if(d){delReg(d.dataset.delm);close();render();toast('Registro borrado')}})});
+  modal(`<h3>${esc(al.nombre)} · ${c} ${esc(cr.t)}</h3>${rs.length?rs.map(r=>`<div class="hist"><span>${fmtF(r.f)}</span><span style="flex:1">${histTxt(r)}</span><button class="btn sm danger" data-delm="${r.id}">Borrar</button></div>`).join(''):'<div class="muted">Sin registros en este periodo.</div>'}<div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cerrar</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const d=e.target.closest('[data-delm]');if(d){delReg(d.dataset.delm);close();render();toast('Registro borrado')}})});
 }
 function obsModal(a){
   const al=S.config.alumnos.find(x=>x.id===a);
@@ -1000,3 +1010,211 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){
   let recargado=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(recargado)return;recargado=true;location.reload()});
 }
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a&&AREAS.some(x=>x.id===a&&x.on))UI.area=a}catch(e){}setArea(UI.area);UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
+
+/* ===================== v1.9 · actividades evaluables, Alumnado, Horario ===================== */
+const TRAMOS=['1-2,9','3-4,9','5-6,9','7-8,9','9-10'];
+const TRC=['#d9646f','#e2917b','#79c487','#6aaed4','#2fbfd4'];
+const RUBT=['1-4,9','5-6,9','7-8,9','9-10']; // tramos que describe cada nivel de la rúbrica
+Object.assign(UI,{act:null,actCrit:null,evTab:'act',alnTab:'mapa',hsem:lunesDe(today())});
+SECS.evaluar={n:'Evaluar',sub:'Actividades evaluables y criterios'};
+SECS.alumnado={n:'Alumnado',sub:'La clase y la ficha de cada alumno'};
+SECS.horario={n:'Horario',sub:'Tu semana: toca una clase'};
+ICONS.alumnado=ICONS.clase;ICONS.horario=ICONS.grid;
+NAV13.splice(0,NAV13.length,'inicio','horario','evaluar','alumnado','prog','avisos','ajustes');
+Object.assign(TILESUB,{horario:'Tu semana; toca una clase para programar o evaluar',evaluar:'Actividades evaluables con sus criterios, como en Séneca',alumnado:'La clase, el refuerzo y la ficha de cada alumno',prog:'Unidades, situaciones de aprendizaje y diario'});
+
+/* ---- datos de actividades ---- */
+const actsDe=(ar=UI.area)=>Object.values(S.prog).filter(p=>p.t==='act'&&p.ar===ar);
+const actsPeriodo=()=>actsDe().filter(p=>inPeriod(p.f)).sort((a,b)=>b.f.localeCompare(a.f)||String(a.d.titulo).localeCompare(String(b.d.titulo)));
+const cursosAct=p=>p.d.curso==='ambos'?CURS(p.ar):[p.d.curso];
+const alsAct=p=>alumnosOrd().filter(a=>cursosAct(p).includes(a.curso));
+const notasAct=p=>allRegs().filter(r=>r.t==='nac'&&nacD(r).act===p.id);
+const critsAct=(p,al)=>(p.d.crits||[]).filter(c=>CRIT[c]&&(!al||aplica(al,c)));
+function progAct(p){const ns=notasAct(p);let tot=0;alsAct(p).forEach(al=>tot+=critsAct(p,al).length);return {n:ns.length,tot}}
+function setTramo(p,a,c,n){
+  const r=notasAct(p).find(x=>x.a===a&&x.c===c);
+  if(r&&+nacD(r).n===n){delReg(r.id)}
+  else{const nr={id:r?r.id:uid(),t:'nac',a,c,f:p.f,ar:p.ar,txt:JSON.stringify({act:p.id,n})};putReg(nr);enqueue({op:'up',r:nr})}
+  render();
+}
+function abrirAct(id){const p=S.prog[id];if(!p)return;if(p.ar!==UI.area){setArea(p.ar);UI.area=p.ar}UI.tab='evaluar';UI.act=id;UI.actCrit=null;render();scrollTo(0,0)}
+
+/* ---- Evaluar ---- */
+function vEvaluar19(){
+  if(UI.act&&S.prog[UI.act])return vActividad(S.prog[UI.act]);
+  UI.act=null;
+  const head=`<h2>Evaluar</h2>${pills('evtab',UI.evTab,[['act','Actividades'],['crit','Criterios'],['rub','Rúbricas']])}${ctxRow()}`;
+  if(UI.evTab==='rub')return head+`<div class="lcard">${CRITS.map(x=>`<details class="rubd"><summary><span class="code">${x.c}</span> ${esc(x.t)}${x.solo4?` <span class="muted small">(solo ${CURS()[1]}.º)</span>`:''}</summary><div class="rub">${x.r.map((t,i)=>`<div><b><span class="sw" style="background:${TRC[i+1]}"></span>${RUBT[i]}</b>${esc(t)}</div>`).join('')}</div></details>`).join('')}</div>`;
+  if(UI.evTab==='crit'){const als=alumnosFiltro(),regs=periodRegs();
+    return head+`<div class="lcard">${CRITS.map(x=>{const ns=als.filter(al=>aplica(al,x.c)).map(al=>notaCrit(regs,al.id,x.c)).filter(v=>v!=null);const m=ns.length?ns.reduce((a,b)=>a+b,0)/ns.length:null;
+      return `<button class="lrow crit" data-critres="${x.c}"><span class="lt"><b>${x.c} ${esc(x.t)}${x.core?' ★':''}</b><span>${ns.length} de ${als.filter(al=>aplica(al,x.c)).length} con nota${m!=null?' · media '+m.toFixed(1).replace('.',','):''}</span></span>${pct(pctCrit(x.c,als))}<span class="chv">${ICONS.chev}</span></button>`}).join('')}</div>
+      <div class="lcard" style="margin-top:12px">${lrow(ICONS.seneca,'var(--a-seneca)','Resumen del trimestre','Notas medias por criterio y nombres como en Séneca','data-tab="seneca"')}</div>`}
+  const L=actsPeriodo();
+  return head+`<button class="btn pri wide" data-act="actNueva" style="margin-bottom:12px">${ICONS.plus} Nueva actividad evaluable</button>`+
+   (L.length?`<div class="lcard">${L.map(p=>{const g=progAct(p),pc=g.tot?Math.round(g.n/g.tot*100):0;return lrow(ICONS.evaluar,'var(--a-evaluar)',esc(p.d.titulo||'Sin título'),`${fmtF(p.f)} · ${cursoN(p.d.curso,p.ar)} · ${(p.d.crits||[]).length} ${(p.d.crits||[]).length===1?'criterio':'criterios'}`,`data-actab="${p.id}"`,pct(pc))}).join('')}</div>`
+   :`<div class="card empty"><b>Aún no hay actividades en ${triTxt(UI.tri)}</b>Crea una con los mismos criterios que tenga en Séneca. Cada actividad guarda sus notas, y la nota de cada criterio es la media de las actividades.</div>`);
+}
+function vActividad(p){
+  const crs=critsAct(p);
+  const back=`<button class="backrow" data-act="actBack">${ICONS.back} Actividades</button>`;
+  const cab=`<div class="card actcab"><h3>${esc(p.d.titulo||'Sin título')}</h3><div class="small muted">${may1(fLarga(p.f))} · ${cursoN(p.d.curso,p.ar)}${p.d.ud&&S.prog[p.d.ud]?' · '+esc(codUd(S.prog[p.d.ud])):''}</div>
+    <div class="g2b" style="margin-top:10px"><button class="btn sm" data-actedit="${p.id}">${ICONS.pen} Editar</button><button class="btn sm pri" data-actsen="${p.id}">${ICONS.seneca} Pasar a Séneca</button></div></div>`;
+  if(!crs.length)return back+cab+`<div class="card empty"><b>Sin criterios</b>Edita la actividad y marca sus criterios.</div>`;
+  if(!crs.includes(UI.actCrit))UI.actCrit=crs[0];
+  const c=UI.actCrit,cr=CRIT[c],ns=notasAct(p);
+  const als=alsAct(p).filter(al=>aplica(al,c));
+  const hecho=k=>{const a2=alsAct(p).filter(al=>aplica(al,k));return a2.length&&a2.every(al=>ns.some(r=>r.a===al.id&&r.c===k))};
+  const tabs=`<div class="actcrits">${crs.map(k=>`<button class="${k===c?'on':''} ${hecho(k)?'ok':''}" data-actc="${k}">${k}${hecho(k)?' ✓':''}</button>`).join('')}</div>`;
+  const desc=cursosAct(p).filter(x=>dTxt(cr,x)).map(x=>`<div><b>${x}.º:</b> ${esc(dTxt(cr,x))}</div>`).join('');
+  const info=`<div class="note"><b>${c} · ${esc(cr.t)}</b>${desc?`<div class="small" style="margin-top:4px">${desc}</div>`:''}<details class="small" style="margin-top:6px"><summary style="cursor:pointer;color:var(--teal)">Ver rúbrica</summary>${cr.r.map((t,i)=>`<div style="margin-top:4px"><b style="color:${TRC[i+1]}">${RUBT[i]}</b> ${esc(t)}</div>`).join('')}</details></div>`;
+  const filas=als.map(al=>{const r=ns.find(x=>x.a===al.id&&x.c===c),n=r?+nacD(r).n:0;
+    return `<div class="nrow"><div class="nn"><span class="av">${esc(inic(al.nombre))}</span><b>${esc(al.nombre)}</b>${cursosAct(p).length>1?`<span class="muted small">${al.curso}.º</span>`:''}${n?`<span class="nnota" style="color:${TRC[n-1]}">${String(notas5()[n-1]).replace('.',',')}</span>`:''}</div>
+      <div class="trs">${TRAMOS.map((t,i)=>`<button class="tr ${n===i+1?'on':''}" style="--tc:${TRC[i]}" data-tr="${al.id}|${i+1}" aria-label="${esc(al.nombre)}: ${t}">${t}</button>`).join('')}</div></div>`}).join('');
+  const hechos=als.filter(al=>ns.some(r=>r.a===al.id&&r.c===c)).length,i=crs.indexOf(c);
+  return back+cab+tabs+info+`<div class="lcard nlist">${filas||'<div class="muted" style="padding:12px">No hay alumnos de este curso.</div>'}</div>
+    <div class="actfoot"><span class="muted small">${hechos} de ${als.length} calificados</span>${i<crs.length-1?`<button class="btn sm pri" data-actc="${crs[i+1]}">Siguiente: ${crs[i+1]} ${ICONS.chev}</button>`:''}</div>`;
+}
+function actModal(id,fecha){
+  const p0=id&&S.prog[id];const d=p0?JSON.parse(JSON.stringify(p0.d)):{titulo:'',curso:'ambos',crits:[],ud:''};let f=p0?p0.f:(fecha||today());
+  const cs=CURS(),udOpts=udsDe(UI.area);
+  const lista=()=>Object.keys(CES).map(ce=>{const xs=CRITS.filter(x=>x.ce==ce);if(!xs.length)return '';return `<div class="cegr"><div class="small muted">CE${ce} · ${esc(CES[ce])}</div>${xs.map(x=>`<label class="ckc"><input type="checkbox" value="${x.c}" ${d.crits.includes(x.c)?'checked':''}><span><b>${x.c}</b> ${esc(x.t)}${x.solo4?` <span class="muted small">(solo ${cs[1]}.º)</span>`:''}</span></label>`).join('')}</div>`}).join('');
+  modal(`<h3>${p0?'Editar actividad':'Nueva actividad evaluable'}</h3>
+   <div class="field"><label>Título (como en Séneca)</label><input type="text" id="aTit" value="${esc(d.titulo)}" placeholder="P. ej. Examen UD02"></div>
+   <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${[...cs.map(c=>[c,c+'.º']),['ambos','Ambos']].map(([k,n])=>`<button type="button" data-v="${k}" class="${d.curso===k?'on':''}">${n}</button>`).join('')}</div></div></div>
+   ${udOpts.length?`<div class="field"><label>Unidad o situación (opcional)</label><div class="erow"><select id="aU"><option value="">Ninguna</option>${udOpts.map(u=>`<option value="${u.id}" ${d.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select><button type="button" class="btn sm" id="aUc">Usar sus criterios</button></div></div>`:''}
+   <div class="field"><label>Criterios que evalúa <span class="muted small" id="aN"></span></label><div id="aL" class="clist">${lista()}</div></div>
+   <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?'<button class="btn danger" id="aDel">Borrar</button>':'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
+    const cnt=()=>{const n=m.querySelectorAll('#aL input:checked').length;m.querySelector('#aN').textContent=n?`(${n})`:''};cnt();
+    m.querySelector('#aL').addEventListener('change',cnt);
+    m.querySelector('#aC').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;m.querySelectorAll('#aC button').forEach(x=>x.classList.toggle('on',x===b))});
+    const uc=m.querySelector('#aUc');if(uc)uc.onclick=()=>{const u=S.prog[m.querySelector('#aU').value];if(!u){toast('Elige primero una unidad');return}const set=new Set(u.d.crits||[]);m.querySelectorAll('#aL input').forEach(i=>i.checked=set.has(i.value));cnt()};
+    m.querySelector('#aOk').onclick=()=>{const tit=m.querySelector('#aTit').value.trim();const crits=[...m.querySelectorAll('#aL input:checked')].map(i=>i.value);
+      if(!tit){toast('Pon un título');return}if(!crits.length){toast('Marca al menos un criterio');return}
+      const nf=m.querySelector('#aF').value||today();const nd={titulo:tit,curso:(m.querySelector('#aC .on')||{}).dataset?.v||'ambos',crits,ud:(m.querySelector('#aU')||{}).value||''};
+      const pid=p0?p0.id:uid();saveProg({id:pid,t:'act',ar:UI.area,f:nf,d:nd});
+      if(p0&&nf!==p0.f)notasAct(p0).forEach(r=>{const nr=Object.assign({},r,{f:nf});putReg(nr);enqueue({op:'up',r:nr})});
+      close();abrirAct(pid);toast('Actividad guardada')};
+    const del=m.querySelector('#aDel');if(del)del.onclick=()=>{const nn=notasAct(p0).length;close();confirmar(`¿Borrar «${d.titulo}»${nn?` y sus ${nn} notas`:''}?`,'Borrar',()=>{notasAct(p0).forEach(r=>delReg(r.id));delProg(p0.id);UI.act=null;render();toast('Actividad borrada')})};
+  });
+}
+function critResModal(c){const cr=CRIT[c],regs=periodRegs(),als=alumnosFiltro().filter(al=>aplica(al,c));
+  const acts=actsPeriodo().filter(p=>(p.d.crits||[]).includes(c));
+  modal(`<h3>${c} · ${esc(cr.t)}</h3><p class="small muted" style="margin-top:-6px">Nota de cada actividad y media (${triTxt(UI.tri)})</p>
+   <div class="tblw"><table class="tbl"><thead><tr><th>Alumno</th>${acts.map(p=>`<th title="${esc(p.d.titulo)}">${esc(p.d.titulo)}</th>`).join('')}<th>Media</th></tr></thead><tbody>${als.map(al=>{const m=notaCrit(regs,al.id,c);return `<tr><td>${esc(al.nombre)}</td>${acts.map(p=>{const r=notasAct(p).find(x=>x.a===al.id&&x.c===c);return `<td>${r?String(notaReg(r)).replace('.',','):'–'}</td>`}).join('')}<td><b>${m==null?'–':m.toFixed(2).replace('.',',')}</b></td></tr>`}).join('')}</tbody></table></div>
+   ${regs.some(r=>r.t==='niv'&&r.c===c)?'<p class="small muted">La media incluye también las notas puestas antes de usar actividades.</p>':''}
+   <div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cerrar</button></div>`)}
+
+/* ---- Pasar una actividad a Séneca (3.º y 4.º a la vez) ---- */
+function senAct(p){const N=nombresSen(),ns=notasAct(p),datos={},sinNombre=[],cods=new Set();let nAl=0;
+  const EXP=(p.ar==='pla'||p.ar==='pla3')?{EP:['3.1','3.2','4.2']}:{};
+  alsAct(p).forEach(al=>{const o={};critsAct(p,al).forEach(c=>{const r=ns.find(x=>x.a===al.id&&x.c===c);if(!r)return;const v=notaReg(r);(EXP[c]||[c]).forEach(k=>{const cod=`${senPref(p.ar)}.${al.curso}.${k}`;o[cod]=String(v);cods.add(cod)})});
+    if(!Object.keys(o).length)return;const n=(N[al.id]||'').trim();if(!n){sinNombre.push(al);return}datos[n]=o;nAl++});
+  const C=[...cods].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const txt=[['ALUMNO',...C].join('\t'),...Object.entries(datos).map(([n,o])=>[n,...C.map(k=>o[k]==null?'':o[k].replace('.',','))].join('\t'))].join('\n');
+  return {datos,txt,nAl,sinNombre,C}}
+function actSenModal(p){const r=senAct(p);
+  modal(`<h3>Pasar a Séneca</h3><p class="small muted" style="margin-top:-6px">«${esc(p.d.titulo)}» · ${cursoN(p.d.curso,p.ar)}</p>
+   ${r.nAl?`<div class="note">Van <b>${r.nAl}</b> ${r.nAl===1?'alumno':'alumnos'} y ${r.C.length} ${r.C.length===1?'código':'códigos'} (${r.C.map(esc).join(', ')}).</div>`:'<div class="card empty">Aún no hay notas que pasar.</div>'}
+   ${r.sinNombre.length?`<div class="note warn" style="margin-top:10px"><b>${r.sinNombre.length} sin nombre de Séneca:</b> ${r.sinNombre.map(a=>esc(a.nombre)).join(', ')}. No se pasan hasta que les pongas el nombre.</div>`:''}
+   <ol class="small" style="margin:12px 0 0;padding-left:18px;line-height:1.5"><li>En Séneca, crea o abre la actividad con este nombre y sus criterios.</li><li>Con la extensión: abre la ventana de calificar y pulsa «Evalúapp». Con AutoNotas: «Importar» y pega.</li><li>Revisa antes de guardar.</li></ol>
+   <div class="stack" style="margin-top:12px">${r.nAl?`<button class="btn pri" id="sExt" ${Sync.ok()?'':'disabled'}>Enviar a la extensión</button><button class="btn" id="sCop">Copiar para AutoNotas</button>`:''}<button class="btn" id="sNom">Nombres como en Séneca</button><button class="btn" data-close>Cerrar</button></div>
+   ${r.nAl&&!Sync.ok()?'<div class="small muted" style="margin-top:6px">«Enviar a la extensión» necesita la hoja de Google conectada.</div>':''}`,(m,close)=>{
+    const ex=m.querySelector('#sExt');if(ex)ex.onclick=()=>{S.config.senPend={ult:{titulo:p.d.titulo,area:areaN(p.ar),cursos:cursosAct(p),gen:new Date().toISOString(),datos:r.datos}};saveConfig();Sync.run&&Sync.run();close();toast('Enviado. En Séneca, abre la actividad y pulsa «Evalúapp»')};
+    const cp=m.querySelector('#sCop');if(cp)cp.onclick=()=>{copiar(r.txt);close()};
+    m.querySelector('#sNom').onclick=()=>{close();nombresModalAls(alsAct(p),p.ar)};
+  })}
+function nombresModalAls(als,ar){const N=nombresSen();
+  modal(`<h3>Nombres como en Séneca</h3><p class="small muted" style="margin-top:-6px">Escríbelos igual que en Séneca: «Apellidos, Nombre». Se guardan en tu hoja de Google.</p>
+   <details style="margin-bottom:10px"><summary class="small" style="cursor:pointer;color:var(--teal)">Pegar la lista de Séneca para autocompletar</summary><textarea id="nmLista" placeholder="Un alumno por línea, copiado de Séneca" style="min-height:90px;margin-top:8px"></textarea></details><datalist id="nmDl"></datalist>
+   <div class="stack">${als.map(a=>`<div class="field"><label>${esc(a.nombre)} · ${a.curso}.º</label><input type="text" list="nmDl" data-nm="${a.id}" value="${esc(N[a.id]||'')}" placeholder="Apellidos, Nombre" autocomplete="off"></div>`).join('')||'<div class="muted">No hay alumnos.</div>'}</div>
+   <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="nmOk">Guardar</button></div>`,(m,close)=>{
+    const dl=m.querySelector('#nmDl');m.querySelector('#nmLista').addEventListener('input',e=>{dl.innerHTML=e.target.value.split('\n').map(x=>x.trim()).filter(Boolean).map(x=>`<option value="${esc(x)}">`).join('')});
+    m.querySelector('#nmOk').onclick=()=>{const o=nombresSen();m.querySelectorAll('[data-nm]').forEach(i=>{const v=i.value.trim();if(v)o[i.dataset.nm]=v;else delete o[i.dataset.nm]});setNombresSen(o);close();render();toast('Guardado')}})}
+
+/* ---- Alumnado = Clase + Alumno ---- */
+function vAlumnado(){
+  const head=`<h2>Alumnado</h2>${pills('alntab',UI.alnTab,[['mapa','Clase'],['ref','Refuerzo'],['al','Alumno']])}`;
+  if(UI.alnTab==='al')return head+vAlumno13().replace(/^<h2>Alumno<\/h2>/,'');
+  UI.clTab=UI.alnTab==='ref'?'ref':'mapa';
+  let h=vClase13().replace(/^<h2>Clase<\/h2>/,'');
+  h=h.replace(pills('cltab',UI.clTab,[['mapa','Mapa de calor'],['ref','Refuerzo']]),'');
+  return head+h;
+}
+
+/* ---- Horario de consulta ---- */
+function vHorarioVer(){
+  const T=franjasT(),l=UI.hsem,dias=[1,2,3,4,5].map(w=>addDias(l,w-1));
+  const nav=`<div class="weeknav"><button class="iconbtn" data-hsem="-7" style="transform:rotate(180deg)" aria-label="Semana anterior">${ICONS.chev}</button><div><b>Semana del ${new Date(dias[0]+'T12:00').getDate()} al ${fLarga(dias[4]).replace(/^[^,]+, /,'')}</b>${dias.includes(today())?'<span class="small muted"> · esta semana</span>':''}</div><button class="iconbtn" data-hsem="7" aria-label="Semana siguiente">${ICONS.chev}</button></div>`;
+  if(!T.length)return `<h2>Horario</h2>${nav}<div class="card empty"><b>Aún no tienes horario</b><div style="margin-top:12px"><button class="btn pri" data-goprog="hor">Configurar horario</button></div></div>`;
+  const H=S.config.horario||{};
+  const cel=(w,fr0)=>{if(!fr0)return '<span class="hvac"></span>';const fr=normFr(fr0),otro=!CURRICULO[fr.ar];const tx=otro?(fr.lab||'Otra'):AB_AREA[fr.ar];const lw=Math.max(...tx.split(/[\s/]+/).map(x=>x.length));
+    return `<span class="hn ${lw>8?'lg':''}">${esc(tx)}${fr.ref?' ®':''}</span>${!otro&&CURRICULO[fr.ar].g?`<span class="hs hg">${supO(esc(CURRICULO[fr.ar].g))}</span>`:''}${!otro&&fr.lab?`<span class="hs${hsCls(fr.lab)}">${esc(fr.lab)}</span>`:''}`};
+  return `<h2>Horario</h2>${nav}<div class="card"><div class="hgrid ver"><table><thead><tr><th></th>${dias.map((f,i)=>`<th class="${f===today()?'hoy':''}"><button data-pdia="${f}">${DIAS[i+1].slice(0,3)}<span>${new Date(f+'T12:00').getDate()}</span></button></th>`).join('')}</tr></thead><tbody>${T.map(t=>`<tr><td class="hcol"><span class="hct">${esc(t.ini)}<span>${esc(t.fin)}</span></span></td>${[1,2,3,4,5].map(w=>{const fr=(H[w]||[]).find(x=>x.ini===t.ini);return `<td class="${dias[w-1]===today()?'hoy':''}">${fr?`<button class="hcell" data-hv="${dias[w-1]}|${t.ini}" style="--fc:${arCol(fr.ar)}">${cel(w,fr)}</button>`:'<span class="hcell vac"></span>'}</td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>
+   <div class="lcard" style="margin-top:12px">${lrow(ICONS.pen,'var(--a-prog)','Cambiar el horario','Franjas, áreas y grupos','data-goprog="hor"')}</div>`;
+}
+function hvModal(f,ini){const frs=franjasDe(f),i=frs.findIndex(x=>x.ini===ini);if(i<0)return;const fr=frs[i],cur=!!CURRICULO[fr.ar];
+  modal(`<h3 style="margin-bottom:2px"><span style="color:${arCol(fr.ar)}">${supO(esc(franjaTit(fr)))}</span>${refMark(fr)}</h3><p class="small muted" style="margin:0 0 12px">${may1(fLarga(f))} · ${esc(fr.ini)}–${esc(fr.fin)}${misTxt(fr)?' · '+esc(misTxt(fr)):''}</p>
+   <div class="lcard flat">${lrow(ICONS.cal,'var(--teal)','Programar esta clase','Qué vas a hacer y qué se hizo','data-hq="prog"')}
+   ${cur?lrow(ICONS.evaluar,'var(--a-evaluar)','Evaluar',`Actividades de ${supO(esc(areaN(fr.ar)))}`,'data-hq="eval"')+lrow(ICONS.plus,'var(--a-evaluar)','Nueva actividad evaluable','Con fecha de este día','data-hq="nueva"'):''}
+   ${lrow(ICONS.doc,'var(--a-prog)','Ver el plan del día',may1(fLarga(f)),'data-hq="dia"')}</div>`,(m,close)=>{
+    m.addEventListener('click',e=>{const b=e.target.closest('[data-hq]');if(!b)return;const q=b.dataset.hq;close();
+      if(q==='prog')sesEditor(f,i);
+      else if(q==='dia'){UI.tab='prog';UI.ptab='dia';UI.pfecha=f;render();scrollTo(0,0)}
+      else{setArea(fr.ar);UI.area=fr.ar;UI.tab='evaluar';UI.evTab='act';UI.act=null;UI.tri=(()=>{const k=S.config.tri.findIndex(([a,b2])=>f>=a&&f<=b2);return k<0?UI.tri:k})();render();scrollTo(0,0);if(q==='nueva')actModal(null,f)}})})}
+
+/* ---- Inicio ---- */
+function vInicio19(){
+  const r=resumen(),hoy=franjasDe(today()),ahora=new Date().toTimeString().slice(0,5);
+  const sig=hoy.find(fr=>(fr.fin||'')>ahora);
+  const L=actsPeriodo();
+  const live={horario:sig?`${sig.ini<=ahora?'Ahora':sig.ini}: ${CURRICULO[sig.ar]?AB_AREA[sig.ar].replace(/ /g,' '):(sig.lab||'Otra')}`:'',evaluar:L.length?`${L.length} ${L.length===1?'actividad':'actividades'}`:'',alumnado:r.alertas?`${r.alertas} ${r.alertas===1?'alerta':'alertas'}`:r.als?`${r.als}`:'',prog:(()=>{const u=udsDe(UI.area).length;return u?`${u} ${u===1?'unidad':'unidades'}`:''})()};
+  return `<div class="hero3 slim"><div class="herotop"><button class="iconbtn ghost mobonly" data-act="drawer" aria-label="Menú">${ICONS.menu}</button></div>
+    <img class="biglogo" src="icons/logo.png" alt="Evalúapp">
+    <div><button class="ctxchip" data-act="ctx"><span>${supO(esc(areaN(UI.area)))} · ${triTxt(UI.tri)}</span>${ICONS.down}</button></div></div>
+   <div class="tiles3 t4">${['horario','evaluar','alumnado','prog'].map(k=>`<button class="tile3" data-tab="${k}" style="--ts:var(--t-${k})">${live[k]?`<span class="tbadge">${esc(live[k])}</span>`:''}${ICONS[k]}<b>${SECS[k].n}</b><span>${TILESUB[k]}</span></button>`).join('')}</div>`;
+}
+Object.assign(VIEWS,{inicio:vInicio19,evaluar:vEvaluar19,alumnado:vAlumnado,horario:vHorarioVer});
+
+/* ---- historial del cell modal: notas de actividad ---- */
+function histTxt(r){if(r.t==='nac'){const d=nacD(r),p=S.prog[d.act];return `<span class="tag" style="background:${TRC[(+d.n||1)-1]};color:#10202a">${TRAMOS[(+d.n||1)-1]} · ${String(notaReg(r)).replace('.',',')}</span> ${p?esc(p.d.titulo):''}`}
+  return r.t==='niv'?`<span class="tag" style="background:${LVC[r.n]}">${r.n} · ${LVN[r.n]}</span>`:esc(r.txt)}
+
+/* ---- cerrar ventanas con Esc y con «atrás»; «atrás» en una sección vuelve a Inicio ---- */
+const _pila=[];let _mn=0,_ignorarPop=0;
+modal=function(html,onMount){const bg=document.createElement('div');bg.className='modal-bg';bg.innerHTML=`<div class="modal">${html}</div>`;document.body.appendChild(bg);
+  let cerrado=false;const n=++_mn;
+  const close=desdePop=>{if(cerrado)return;cerrado=true;bg.remove();const i=_pila.indexOf(close);if(i>=0)_pila.splice(i,1);if(desdePop!==true&&history.state&&history.state.evm===n){_ignorarPop++;history.back()}};
+  try{history.pushState({evm:n},'')}catch(e){}
+  _pila.push(close);
+  bg.addEventListener('click',e=>{if(e.target===bg||e.target.closest('[data-close]'))close()});
+  onMount&&onMount(bg.querySelector('.modal'),close);return close};
+window.addEventListener('popstate',()=>{if(_ignorarPop>0){_ignorarPop--;return}
+  const c=_pila[_pila.length-1];if(c){c(true);return}
+  if(UI.act){UI.act=null;if(!(history.state&&history.state.evt)){try{history.pushState({evt:1},'')}catch(e){}}render();return}
+  if(UI.tab!=='inicio'){UI.tab='inicio';render();scrollTo(0,0)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&_pila.length){e.preventDefault();_pila[_pila.length-1]()}});
+function _navPush(){try{if(!(history.state&&history.state.evt))history.pushState({evt:1},'')}catch(e){}}
+
+/* ---- clics de las nuevas pantallas (antes que el manejador general) ---- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab],[data-actab],[data-actc],[data-tr],[data-actedit],[data-actsen],[data-critres],[data-alntab],[data-hsem],[data-hv],[data-veral],[data-act="actNueva"],[data-act="actBack"],[data-q="act"]');if(!t||t===document.body||t===document.documentElement)return;
+  const d=t.dataset,stop=()=>{e.preventDefault();e.stopImmediatePropagation()};
+  if(d.tab!==undefined){let k=d.tab;if(k==='clase'){k='alumnado';UI.alnTab='mapa'}if(k==='alumno'){k='alumnado';UI.alnTab='al'}
+    if(k==='evaluar'){UI.act=null}
+    if(k!=='inicio'&&UI.tab==='inicio')_navPush();
+    if(k!==d.tab){stop();UI.tab=k;render();scrollTo(0,0)}return}
+  stop();
+  if(d.actab){try{history.pushState({evt:2},'')}catch(e){}abrirAct(d.actab);return}
+  if(d.actc){UI.actCrit=d.actc;render();return}
+  if(d.tr){const [a,n]=d.tr.split('|');const p=S.prog[UI.act];if(p)setTramo(p,a,UI.actCrit,+n);return}
+  if(d.actedit){actModal(d.actedit);return}
+  if(d.actsen){actSenModal(S.prog[d.actsen]);return}
+  if(d.critres){critResModal(d.critres);return}
+  if(d.alntab){UI.alnTab=d.alntab;render();return}
+  if(d.hsem){UI.hsem=addDias(UI.hsem,+d.hsem);render();return}
+  if(d.hv){const [f,ini]=d.hv.split('|');hvModal(f,ini);return}
+  if(d.veral!==undefined){UI.alumno=d.veral;UI.tab='alumnado';UI.alnTab='al';render();scrollTo(0,0);return}
+  if(d.act==='actNueva'){actModal();return}
+  if(d.act==='actBack'){UI.act=null;render();scrollTo(0,0);return}
+  if(d.q==='act'){if(_pila.length)_pila[_pila.length-1]();UI.tab='evaluar';UI.evTab='act';UI.act=null;render();actModal();return}
+},true);
