@@ -811,3 +811,20 @@ html.claro .pills{background:#e8ebf4;border:0}
 .eacts .achip svg{display:block;width:13px;height:13px}.eacts .achip em{display:inline;font-size:11px}
 .eacts .achip span,.eacts .achip .lg,.dacts .achip span,.dacts .achip .lg{font-size:inherit;letter-spacing:0}
 @media(max-width:899px) and (orientation:landscape) and (max-height:540px){.hk .achip{font-size:10px;padding:2px 5px}.hk .achip .lg{font-size:9px}}
+/* v2.1.1 · encuadre de la cabecera */
+.cabenc input[type=range]{width:100%;accent-color:var(--pri,#ff5f6d)}
+.cabprev{border-radius:10px;overflow:hidden;margin:4px 0 6px}
+.cabencl{display:flex;justify-content:space-between}
+/* v2.1.1 · plan del día en el móvil con las proporciones del impreso */
+@media(max-width:899px){
+  .drow{padding:9px 12px}
+  .dh{font-size:12px}
+  .dar{font-size:19px}.dar .refm{font-size:12px}
+  .dmis{font-size:10.5px;margin-top:1px}
+  .dcols{margin-top:4px}
+  .dcols.n2 .ccol+.ccol{padding-left:9px;border-left-width:1px}.dcols.n2 .ccol:first-child{padding-right:9px}
+  .dpage .ccol{font-size:12px;line-height:1.35}
+  .dtop{column-gap:8px}
+  .dacts{padding:0 12px 9px}.dacts .achip{font-size:11px;padding:4px 7px}
+}
+.cabencl{line-height:1.3;margin:2px 0 10px}

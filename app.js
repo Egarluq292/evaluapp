@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.1.0';
+const APP_VERSION='2.1.1';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -467,7 +467,7 @@ function franjasT(){if(S.config.franjas&&S.config.franjas.length)return S.config
 function cabSelHTML(){return `<div class="cabs">${Object.entries(CABECERAS).map(([k,c])=>`<button class="cabopt ${(S.config.cabecera||'acuarela')===k?'on':''}" data-cab="${k}">${c.svg('Martes, 3 de noviembre')}<span>${c.n}</span></button>`).join('')}
      <button class="cabopt ${S.config.cabecera==='propia'?'on':''}" data-cab="propia">${cabPropia()?`<div class="cabimg" style="background-image:url(${cabPropia()})"></div>`:'<div class="cabimg vacia">Sube una imagen</div>'}<span>Mi imagen</span></button>
      <button class="cabopt ${S.config.cabecera==='ninguna'?'on':''}" data-cab="ninguna"><div class="cabimg vacia">Sin imagen</div><span>Sin cabecera</span></button></div>
-     <label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda en tu hoja de Google y aparece en todos tus dispositivos. Úsala solo para ti: no la publiques si tiene personajes con derechos.</div>`}
+     ${cabPropia()?`<div class="field cabenc"><label>Encuadre de tu imagen <span class="muted small">(muévelo hasta ver la parte que quieres)</span></label><div class="cabprev cab cabp"><img src="${cabPropia()}" alt="" style="object-position:50% ${cabPos()}%"></div><input type="range" id="cabPos" min="0" max="100" step="1" value="${cabPos()}" aria-label="Encuadre vertical"><div class="small muted cabencl"><span>Parte de arriba</span><span>Parte de abajo</span></div></div>`:''}<label class="btn sm" style="text-align:center">Subir mi imagen<input type="file" id="cabFile" accept="image/*" hidden></label><div class="small muted">Tu imagen se guarda en tu hoja de Google y aparece en todos tus dispositivos. Úsala solo para ti: no la publiques si tiene personajes con derechos.</div>`}
 function cabModal(){modal(`<h3>Cabecera del plan</h3><div class="stack">${cabSelHTML()}</div><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Hecho</button></div>`,(m,close)=>{m.addEventListener('click',e=>{const b=e.target.closest('[data-cab]');if(b&&!(b.dataset.cab==='propia'&&!cabPropia()))setTimeout(()=>{m.querySelectorAll('.cabopt').forEach(x=>x.classList.toggle('on',x===b))},0)})})}
 function setHorario(fn){const H=JSON.parse(JSON.stringify(S.config.horario||{}));[1,2,3,4,5].forEach(w=>H[w]=H[w]||[]);const T=JSON.parse(JSON.stringify(franjasT()));fn(H,T);T.sort((a,b)=>hm(a.ini)-hm(b.ini));[1,2,3,4,5].forEach(w=>{H[w]=H[w].map(normFr).filter(fr=>T.some(t=>t.ini===fr.ini)).map(fr=>Object.assign(fr,{fin:T.find(t=>t.ini===fr.ini).fin})).sort((a,b)=>hm(a.ini)-hm(b.ini))});S.config.horario=H;S.config.franjas=T;saveConfig();render()}
 const DCHK=(sel,fijo)=>`<div class="dchk">${[1,2,3,4,5].map(w=>`<button class="tchip ${sel.includes(w)?'on':''}" data-w="${w}" ${w===fijo?'disabled':''}>${DIAS[w].slice(0,3)}</button>`).join('')}<button class="tchip" data-w="todos">Toda la semana</button></div>`;
@@ -522,12 +522,13 @@ async function cargarCabRemota(){let vl='';try{vl=localStorage.getItem('evaluapp
   if(!_cabPedida&&S.config.cabecera==='propia'&&cabPropia()&&!S.config.cabVer&&Sync.ok()&&SYNCST[0]==='ok'){_cabPedida=true;subirCabRemota(cabPropia());return}
   if(_cabPedida||S.config.cabecera!=='propia'||!Sync.ok()||(cabPropia()&&(!S.config.cabVer||vl===S.config.cabVer)))return;_cabPedida=true;
   try{const j=await Sync.call({action:'cabGet'});if(j&&j.img){localStorage.setItem('evaluapp-cab',j.img);if(S.config.cabVer)localStorage.setItem('evaluapp-cab-ver',S.config.cabVer);render()}}catch(e){}}
+function cabPos(){const v=S.config.cabPos;return v==null||isNaN(+v)?45:Math.max(0,Math.min(100,+v))}
 function cabPropia(){try{return localStorage.getItem('evaluapp-cab')||''}catch(e){return ''}}
 function cabeceraHTML(f){const k=S.config.cabecera||'acuarela',t=may1(fLarga(f));
   const fs=Math.round(Math.min(112,1080/(t.length*.37)));
   const txt=(fill,stroke)=>`<svg class="cabtx" viewBox="0 0 1200 316" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><text x="600" y="${158+fs*.33}" text-anchor="middle" font-family="Amatic SC, cursive" font-weight="700" font-size="${fs}" fill="${fill}" stroke="${stroke}" stroke-width="${stroke==='none'?0:12}" stroke-linejoin="round" paint-order="stroke">${esc(t)}</text></svg>`;
   if(k==='ninguna')return `<div class="cab cabn">${txt('#2c5866','none')}</div>`;
-  if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt="">${txt('#2c5866','rgba(251,250,246,.85)')}</div>`;
+  if(k==='propia'&&cabPropia())return `<div class="cab cabp"><img src="${cabPropia()}" alt="" style="object-position:50% ${cabPos()}%">${txt('#2c5866','rgba(251,250,246,.85)')}</div>`;
   return `<div class="cab">${(CABECERAS[k]||CABECERAS.acuarela).svg(esc(t))}</div>`}
 function subirCabecera(file){const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const r=Math.min(1,1600/img.width);const c=document.createElement('canvas');c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext('2d').drawImage(img,0,0,c.width,c.height);let q=.85,d=c.toDataURL('image/jpeg',q);while(d.length>1400000&&q>.4){q-=.1;d=c.toDataURL('image/jpeg',q)}try{localStorage.setItem('evaluapp-cab',d);S.config.cabecera='propia';saveConfig();render();subirCabRemota(d)}catch(e){toast('La imagen es demasiado grande')}URL.revokeObjectURL(url)};img.src=url}
 /* ---- sesiones ---- */
@@ -1389,6 +1390,9 @@ document.addEventListener('click',e=>{
 /* Ajustes: tema */
 {const _b=VIEWS.ajustes;VIEWS.ajustes=()=>_b()+`<div class="lcard" style="margin-top:12px">${lrow(ICONS.pen,'var(--a-ajustes)','Tema',temaOsc()?'Oscuro · toca para pasar a claro':'Claro · toca para pasar a oscuro','data-act="temaT"')}</div>`}
 
+/* encuadre de la imagen de cabecera: vista previa en vivo y se guarda al soltar */
+document.addEventListener('input',e=>{if(e.target.id!=='cabPos')return;document.querySelectorAll('.cabprev img').forEach(i=>i.style.objectPosition=`50% ${e.target.value}%`)});
+document.addEventListener('change',e=>{if(e.target.id!=='cabPos')return;S.config.cabPos=+e.target.value;saveConfig();render()});
 /* ===================== v2.1 · horario semanal en Inicio y actividades en su clase ===================== */
 UI.isem=lunesDe(today());
 /* actividades de una clase: misma fecha y área; si tienen hora, en esa franja; si no, en la primera franja de esa área ese día */
@@ -1412,7 +1416,7 @@ function semanaInicio(){
       return `<div class="wkc"><div class="hk ${f===today()?'hoy':''} ${cur?'':'otra'}" role="button" tabindex="0" data-hkd="${f}|${t.ini}" style="--c:${arCol(fr.ar)}"><b class="hkn"><span class="dsk">${esc(nom)}</span><span class="mob ${hsCls(cur?AB_AREA[fr.ar]:nom).trim()}">${esc(cur?AB_AREA[fr.ar]:nom)}</span>${fr.ref?' ®':''}</b>${g?`<span class="hkg">${supO(esc(g))}</span>`:''}${fr.mis?`<span class="hkg"><span class="dsk">↳ ${esc(fr.mis)}</span><span class="mob ${hsCls(MIS_AB[fr.mis]||fr.mis).trim()}">↳\u00a0${esc(MIS_AB[fr.mis]||fr.mis)}</span></span>`:''}${txt?`<span class="hkt">${esc(txt)}</span>`:''}${actsChips(actsClase(f,fr),'',fr)}</div></div>`}).join('')}`).join('');
   return `<div class="card pad wk">${head}<div class="wkgrid">${cab}${filas}</div><p class="small muted wkpie">Toca una clase para ir a ese día. Las actividades evaluables aparecen en su clase; tócalas para evaluar.</p></div>`;
 }
-{const _vi=vInicio20;vInicio20=function(){const h=_vi();const i=h.indexOf('<div class="kpis">');return i<0?h+semanaInicio():h.slice(0,i)+semanaInicio()+h.slice(i)};VIEWS.inicio=vInicio20}
+{const _vi=vInicio20;vInicio20=function(){const h=_vi();const i=h.indexOf('<div class="kpis">');return (i<0?h:h.slice(0,i))+semanaInicio()};VIEWS.inicio=vInicio20}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-isem],[data-hkd]');if(!t||e.target.closest('[data-actab]'))return;e.preventDefault();e.stopImmediatePropagation();const d=t.dataset;
   if(d.isem!==undefined){UI.isem=+d.isem===0?lunesDe(today()):addDias(UI.isem,+d.isem);render();return}
   if(d.hkd){const [f]=d.hkd.split('|');try{history.pushState({evt:1},'')}catch(err){}UI.tab='prog';UI.ptab='dia';UI.pfecha=f;render();scrollTo(0,0);const ini=d.hkd.split('|')[1];if(ini)setTimeout(()=>{const i=franjasDe(f).findIndex(x=>x.ini===ini);const el=document.querySelector(`.drow[data-sed="${f}|${i}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1400)}},80)}},true);
