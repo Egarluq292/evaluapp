@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.9.6';
+const APP_VERSION='1.9.7';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -374,6 +374,11 @@ function vTris(){
     return `<div class="card"><div class="trit">${TRI_N[t].replace('trim.','trimestre')}</div><div class="trinum"><b>${l.length}</b> ${l.length===1?'unidad':'unidades'} · <b>${ses}</b> sesiones</div><div class="prog"><i style="width:${pct}%"></i></div><div class="small muted" style="margin:6px 0 10px">${hechas} de ${l.length} impartidas</div>${l.map(u=>{const e=udEstado(u);return `<button class="tline" data-ud="${u.id}"><span class="dotst ${e}"></span><span>${esc(u.d.titulo||'Sin título')}</span><span class="muted">${UI.pcurso==='todos'?cursoN(udCurso(u),u.ar)+' · ':''}${u.d.ses||0} s.</span></button>`}).join('')||'<div class="muted small">Sin unidades.</div>'}</div>`}).join('')}</div>
   <div class="grid2" style="margin-top:12px">${(UI.pcurso==='todos'?CURS():[UI.pcurso]).map(coberturaCard).join('')}</div>`;
 }
+const UD_GRUPOS0=[['mat','len'],['cmn','cmn3'],['pla','pla3']];
+const udGrupos=()=>S.config.udGrupos||UD_GRUPOS0;
+const grupoDe=ar=>(udGrupos().find(g=>g.includes(ar))||[ar]).filter(a=>a!==ar);
+const udsTipo=(ar,tipo)=>udsDe(ar).filter(x=>(x.d.tipo==='SdA')===(tipo==='SdA'));
+const udIdx=u=>udsTipo(u.ar,u.d.tipo).findIndex(x=>x.id===u.id);
 function udModal(id){
   const ex=id?S.prog[id]:null;
   const u=ex?JSON.parse(JSON.stringify(ex)):{id:'ud-'+uid(),t:'ud',ar:UI.area,f:'',d:{tipo:'UD',curso:UI.pcurso==='todos'?'ambos':UI.pcurso,titulo:'',tri:UI.tri<3?UI.tri:0,ses:8,ini:'',fin:'',desc:'',crits:[],sab:[],act:'',inst:[],hecha:false}};
@@ -386,6 +391,7 @@ function udModal(id){
    <div class="field"><label>Título</label><input type="text" id="udTit" value="${esc(u.d.titulo)}" maxlength="120" placeholder="Por ejemplo: Somos comerciantes"></div>
    <div class="field"><label>Trimestre</label><div class="seg" id="udTri">${[0,1,2].map(t=>`<button data-v="${t}" class="${(u.d.tri??0)===t?'on':''}">${TRI_N[t]}</button>`).join('')}</div></div>
    <div class="g3"><div class="field"><label>Sesiones</label><input type="number" id="udSes" min="1" max="99" value="${u.d.ses||''}"></div><div class="field"><label>Inicio</label><input type="date" id="udIni" value="${u.d.ini||''}"></div><div class="field"><label>Fin</label><input type="date" id="udFin" value="${u.d.fin||''}"></div></div>
+   <div class="field"><label>Mismas fechas y trimestre en</label><div class="tchips" id="udLink">${Object.keys(CURRICULO).filter(a=>a!==u.ar).map(a=>`<button type="button" class="tchip ${grupoDe(u.ar).includes(a)?'on':''}" data-la="${a}">${supO(esc(areaN(a)))}</button>`).join('')}</div><div class="small muted" id="udLinkInfo" style="margin-top:4px"></div></div>
    <div class="field"><label>Descripción o producto final</label><textarea id="udDesc" style="min-height:80px" placeholder="Reto, contexto o producto que elaborará el alumnado">${esc(u.d.desc)}</textarea></div>
    <div class="field"><label>Criterios de evaluación</label><div class="tchips" id="udCrit">${chips(CRITS.map(x=>[x.c,`<b>${x.c}</b> ${esc(x.t)}${x.solo4?` (solo ${CURS()[1]}.º)`:''}`]),u.d.crits||[],'c')}</div></div>
    <div class="field"><label>Saberes básicos</label>${Object.entries(BLOQUES).map(([b,bn])=>{const l=SABERES.filter(([c])=>c.split('.')[2]===b);return l.length?`<div class="small muted" style="margin:6px 0 4px">${b}. ${esc(bn)}</div><div class="tchips" data-grp="sab">${chips(l.map(([c,t])=>[c,esc(t)]),u.d.sab||[],'s')}</div>`:''}).join('')}</div>
@@ -398,6 +404,11 @@ function udModal(id){
       const tc=e.target.closest('.tchip');if(tc&&!tc.disabled){e.preventDefault();tc.classList.toggle('on');return}
     });
     const v=sel=>m.querySelector(sel+' .on')?.dataset.v;
+    const idx0=ex?udIdx(ex):-1;
+    const linkInfo=()=>{const sel=[...m.querySelectorAll('#udLink .tchip.on')].map(b=>b.dataset.la);const tipo=v('#udTipo')||'UD';const pre=tipo==='SdA'?'SA':'UD';
+      const i=idx0>=0?idx0:udsTipo(u.ar,tipo).length;
+      m.querySelector('#udLinkInfo').innerHTML=sel.length?sel.map(a=>{const p=udsTipo(a,tipo)[i];return `${supO(esc(areaN(a)))}: ${p?`${pre}${i+1} «${esc(p.d.titulo)}»`:`se creará la ${pre}${i+1}`}`}).join('<br>'):'Solo esta área.'};
+    linkInfo();m.addEventListener('click',e=>{if(e.target.closest('#udLink .tchip,#udTipo button'))setTimeout(linkInfo,0)});
     const quitarActual=(act,id)=>{Object.keys(act).forEach(k=>{if(act[k]===id)act[k]=''})};
     if(m.querySelector('#udDel'))m.querySelector('#udDel').onclick=()=>{confirmar('¿Eliminar esta unidad? Las sesiones del diario que la usen se quedarán sin unidad.','Eliminar',()=>{delProg(u.id);const act=Object.assign({},S.config.udActual||{});quitarActual(act,u.id);S.config.udActual=act;saveConfig();close();render();toast('Unidad eliminada')})};
     m.querySelector('#udOk').onclick=()=>{
@@ -406,11 +417,18 @@ function udModal(id){
         crits:[...m.querySelectorAll('#udCrit .tchip.on')].map(b=>b.dataset.c),sab:[...m.querySelectorAll('[data-grp="sab"] .tchip.on')].map(b=>b.dataset.s),inst:[...m.querySelectorAll('#udInst .tchip.on')].map(b=>b.dataset.i)});
       const ne=v('#udEst')||'pend';u.d.hecha=ne==='hecha';
       saveProg(u);
+      const sel=[...m.querySelectorAll('#udLink .tchip.on')].map(b=>b.dataset.la);
+      const gi=idx0>=0?idx0:udIdx(u);let nLink=0;
+      sel.forEach(a=>{const p=udsTipo(a,u.d.tipo)[gi];
+        if(p){const q=JSON.parse(JSON.stringify(p));Object.assign(q.d,{tri:u.d.tri,ini:u.d.ini,fin:u.d.fin});saveProg(q)}
+        else saveProg({id:'ud-'+uid(),t:'ud',ar:a,f:'',d:{tipo:u.d.tipo,curso:'ambos',titulo:(u.d.tipo==='SdA'?'Situación de aprendizaje ':'Unidad ')+(gi+1),tri:u.d.tri,ses:u.d.ses,ini:u.d.ini,fin:u.d.fin,desc:'',crits:[],sab:[],act:'',inst:[],hecha:false}});
+        nLink++});
+      {const G=udGrupos().map(g=>g.filter(a=>a!==u.ar&&!sel.includes(a))).filter(g=>g.length>1);if(sel.length)G.push([u.ar,...sel]);if(JSON.stringify(G)!==JSON.stringify(udGrupos())){S.config.udGrupos=G;saveConfig()}}
       const act=Object.assign({},S.config.udActual||{});const antes=JSON.stringify(act);
       quitarActual(act,u.id);
       if(ne==='curso')cursosDe(u.d.curso).forEach(c=>act[actKey(u.ar,c)]=u.id);
       if(JSON.stringify(act)!==antes){S.config.udActual=act;saveConfig()}
-      close();render();toast('Unidad guardada');
+      close();render();toast(nLink?`Unidad guardada y fechas copiadas a ${nLink} ${nLink===1?'área':'áreas'}`:'Unidad guardada');
     };
   });
 }
