@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='1.9.7';
+const APP_VERSION='1.9.8';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -407,8 +407,9 @@ function udModal(id){
     const idx0=ex?udIdx(ex):-1;
     const linkInfo=()=>{const sel=[...m.querySelectorAll('#udLink .tchip.on')].map(b=>b.dataset.la);const tipo=v('#udTipo')||'UD';const pre=tipo==='SdA'?'SA':'UD';
       const i=idx0>=0?idx0:udsTipo(u.ar,tipo).length;
-      m.querySelector('#udLinkInfo').innerHTML=sel.length?sel.map(a=>{const p=udsTipo(a,tipo)[i];return `${supO(esc(areaN(a)))}: ${p?`${pre}${i+1} «${esc(p.d.titulo)}»`:`se creará la ${pre}${i+1}`}`}).join('<br>'):'Solo esta área.'};
+      m.querySelector('#udLinkInfo').innerHTML=sel.length?sel.map(a=>{const p=udsTipo(a,tipo)[i];return `${supO(esc(areaN(a)))}: ${p?`${pre}${i+1} «${esc(p.d.titulo)}» · <a href="#" data-udopen="${p.id}" style="color:var(--teal)">editar sus criterios</a>`:`se creará la ${pre}${i+1}`}`}).join('<br>'):'Solo esta área.'};
     linkInfo();m.addEventListener('click',e=>{if(e.target.closest('#udLink .tchip,#udTipo button'))setTimeout(linkInfo,0)});
+    m.addEventListener('click',e=>{const o=e.target.closest('[data-udopen]');if(!o)return;e.preventDefault();const p=S.prog[o.dataset.udopen];if(!p)return;close();setArea(p.ar);UI.area=p.ar;render();udModal(p.id);setTimeout(()=>{const c=document.querySelector('#udCrit');if(c)c.scrollIntoView({block:'center'})},150);toast('Ahora estás en '+areaN(p.ar))});
     const quitarActual=(act,id)=>{Object.keys(act).forEach(k=>{if(act[k]===id)act[k]=''})};
     if(m.querySelector('#udDel'))m.querySelector('#udDel').onclick=()=>{confirmar('¿Eliminar esta unidad? Las sesiones del diario que la usen se quedarán sin unidad.','Eliminar',()=>{delProg(u.id);const act=Object.assign({},S.config.udActual||{});quitarActual(act,u.id);S.config.udActual=act;saveConfig();close();render();toast('Unidad eliminada')})};
     m.querySelector('#udOk').onclick=()=>{
@@ -428,7 +429,7 @@ function udModal(id){
       quitarActual(act,u.id);
       if(ne==='curso')cursosDe(u.d.curso).forEach(c=>act[actKey(u.ar,c)]=u.id);
       if(JSON.stringify(act)!==antes){S.config.udActual=act;saveConfig()}
-      close();render();toast(nLink?`Unidad guardada y fechas copiadas a ${nLink} ${nLink===1?'área':'áreas'}`:'Unidad guardada');
+      close();render();toast(nLink?`Unidad guardada y fechas copiadas a ${nLink} ${nLink===1?'área':'áreas'}. Sus criterios se eligen en cada área.`:'Unidad guardada');
     };
   });
 }
