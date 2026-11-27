@@ -907,3 +907,11 @@ details.catcet>summary b{font-size:15px;color:var(--pri,#5b63e8)}
 :root{--a-curriculo:var(--a-prog);--s-curriculo:var(--s-prog);--a-grupos:var(--a-alumnado);--s-grupos:var(--s-alumnado)}
 .pills button.on{background:var(--acc,#9cc8f2);color:#0e1623}
 html.claro .pills button.on{background:#fff;color:var(--ink)}
+/* ===================== v2.5 · icono más grande y saludo ===================== */
+.mtop2 img{width:44px;height:44px;border-radius:12px}
+.mtop2.ini img{width:58px;height:58px;border-radius:15px;box-shadow:0 6px 16px rgba(26,32,56,.22)}
+.mtop2.ini .mctx b{font-size:20px;line-height:1.15}
+.mtop2.ini .mctx span{font-size:12.5px}
+.side .brand2 img{width:46px;height:46px;border-radius:12px}
+.pinicio .ptitle{align-items:center}
+.mtop2 .nw{white-space:nowrap}

@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.4.2';
+const APP_VERSION='2.5.0';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1645,6 +1645,19 @@ const arsGrupo=gid=>{const A=cfgAreas();return [...AR_TUT,...AR_CIC].filter(id=>
   h=h.replace(/<div class="pills grp">[\s\S]*?<\/div>/,`<div class="pills grp">${G.map(x=>`<button data-alngrp="${x.id}" class="${UI.alnGrp===x.id?'on':''}">${supO(esc(x.n))}</button>`).join('')}</div>`)
      .replace(/(<div class="psub">)(Tutoría|3\.<sup>er<\/sup> ciclo)/,`$1${supO(esc(g.n))}`);
   return h};VIEWS.alumnado=vAlumnado22}
+
+
+/* ===================== v2.5 · saludo con tu nombre e icono más grande ===================== */
+saludo=function(){const h=new Date().getHours();return h>=6&&h<14?'Buenos días':h>=14&&h<21?'Buenas tardes':'Buenas noches'};
+const saludoNom=()=>saludo()+(S.config.nombre?', '+S.config.nombre:'');
+{const _rc=renderChrome;renderChrome=function(){_rc();const t=document.querySelector('#top .mtop2');if(!t)return;const ini=UI.tab==='inicio';t.classList.toggle('ini',ini);
+  if(ini){const b=t.querySelector('.mctx b'),sp=t.querySelector('.mctx span');if(b)b.textContent=saludoNom();if(sp)sp.innerHTML=`${may1(fLarga(today())).replace(/ de \d{4}$/,'')} · <span class="nw">${triTxt(UI.tri)}&nbsp;${ICONS.down}</span>`}}}
+function nombreModal(){modal(`<h3>Tu nombre</h3><p class="small muted" style="margin-top:-6px">Para saludarte al abrir la app. Se guarda en tu hoja.</p><div class="field"><input id="nmN" value="${esc(S.config.nombre||'')}" placeholder="P. ej. Esteban" autocomplete="given-name"></div><div class="btns" style="justify-content:flex-end;margin-top:12px"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="nmOk">Guardar</button></div>`,(m,close)=>{const i=m.querySelector('#nmN');setTimeout(()=>i.focus(),50);
+  const ok=()=>{S.config.nombre=i.value.trim().replace(/\s+/g,' ');saveConfig();close();render()};m.querySelector('#nmOk').onclick=ok;i.addEventListener('keydown',e=>{if(e.key==='Enter')ok()})})}
+{const _b=VIEWS.ajustes;VIEWS.ajustes=()=>`<div class="lcard" style="margin-bottom:12px">${lrow(ICONS.alumno,'var(--a-inicio)','Tu nombre',S.config.nombre?esc(S.config.nombre):'Para que la app te salude','data-act2="nombre"')}</div>`+_b()}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act2="nombre"]');if(!t)return;e.preventDefault();e.stopImmediatePropagation();nombreModal()},true);
+/* sin nombre: al tocar el saludo de Inicio se puede poner */
+document.addEventListener('click',e=>{if(UI.tab!=='inicio'||S.config.nombre)return;const b=e.target.closest('#top .mtop2.ini .mctx b');if(!b)return;e.preventDefault();e.stopImmediatePropagation();nombreModal()},true);
 
 /* ---- arranque: siempre al final, cuando ya está definido todo ---- */
 loadLocal();try{const a=localStorage.getItem('evaluapp-area');if(a)UI.area=a}catch(e){}construirAreas();if(!AREAS.some(x=>x.id===UI.area))UI.area=(AREAS[0]||{id:'mat'}).id;setArea(UI.area);if(!CAT&&cfgAreas().some(a=>!AR_STATIC.includes(a.id)))cargarCatalogo().then(()=>{construirAreas();render()}).catch(()=>{});UI.tri=guessTri();if(UI.tri===3)UI.tri=0;render();Sync.status();Sync.run();
