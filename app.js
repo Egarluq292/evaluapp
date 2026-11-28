@@ -25,7 +25,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmtF=f=>{const [y,m,d]=f.split('-');return d+'/'+m+'/'+y.slice(2)};
 
 /* ============ ALMACENAMIENTO (nube privada + copia local) ============ */
-const APP_VERSION='2.6.1';
+const APP_VERSION='2.6.2';
 const LK='evaluapp-datos',LO='evaluapp-cambios',LS='evaluapp-sync';
 let OPS=[];let SYNC={url:'',key:''};
 function persist(){try{localStorage.setItem(LK,JSON.stringify(S));localStorage.setItem(LO,JSON.stringify(OPS))}catch(e){}}
@@ -1116,27 +1116,43 @@ function vActividad(p){
 }
 function actModal(id,fecha,opts={}){
   const p0=id&&S.prog[id];const d=p0?JSON.parse(JSON.stringify(p0.d)):{titulo:'',curso:'ambos',crits:[],ud:''};let f=p0?p0.f:(fecha||today());
-  const cs=CURS(),udOpts=udsDe(UI.area);
-  const lista=()=>Object.keys(CES).map(ce=>{const xs=CRITS.filter(x=>x.ce==ce);if(!xs.length)return '';return `<div class="cegr"><div class="small muted">CE${ce} · ${esc(CES[ce])}</div>${xs.map(x=>`<label class="ckc"><input type="checkbox" value="${x.c}" ${d.crits.includes(x.c)?'checked':''}><span><b>${x.c}</b> ${esc(x.t)}${x.solo4?` <span class="muted small">(solo ${cs[1]}.º)</span>`:''}</span></label>`).join('')}</div>`}).join('');
+  let ar=p0?p0.ar:(opts.ar&&CURRICULO[opts.ar]?opts.ar:UI.area);const conNotas=p0&&notasAct(p0).length>0;
+  const grupoAr=a=>CURS(a).join(',');
+  const cursosHtml=()=>{const cs=CURS(ar);if(d.curso!=='ambos'&&!cs.includes(d.curso))d.curso='ambos';return [...cs.map(c=>[c,c+'.º']),...(cs.length>1?[['ambos','Ambos']]:[])].map(([k,n])=>`<button type="button" data-v="${k}" class="${(cs.length<2&&k===cs[0])||d.curso===k?'on':''}">${n}</button>`).join('')};
+  const lista=()=>conArea(ar,()=>{const cs=CURS(ar);return Object.keys(CES).map(ce=>{const xs=CRITS.filter(x=>x.ce==ce);if(!xs.length)return '';return `<div class="cegr"><div class="small muted">CE${ce} · ${esc(CES[ce])}</div>${xs.map(x=>`<label class="ckc"><input type="checkbox" value="${x.c}" ${d.crits.includes(x.c)?'checked':''}><span><b>${x.c}</b> ${esc(x.t)}${noAplica(x,cs[0],ar)?` <span class="muted small">(solo ${cs[1]}.º)</span>`:''}</span></label>`).join('')}</div>`}).join('')});
+  const udsHtml=()=>{const L=udsDe(ar);return L.length?`<label>Unidad o situación (opcional)</label><div class="erow"><select id="aU"><option value="">Ninguna</option>${L.map(u=>`<option value="${u.id}" ${d.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select><button type="button" class="btn sm" id="aUc">Usar sus criterios</button></div>`:''};
+  const arOpts=()=>AREAS.map(a=>`<option value="${a.id}" ${a.id===ar?'selected':''}>${esc(areaN(a.id))}</option>`).join('');
   modal(`<h3>${p0?'Editar actividad':'Nueva actividad evaluable'}</h3>
    <div class="field"><label>Título (como en Séneca)</label><input type="text" id="aTit" value="${esc(d.titulo)}" placeholder="P. ej. Examen UD02"></div>
-   <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${[...cs.map(c=>[c,c+'.º']),['ambos','Ambos']].map(([k,n])=>`<button type="button" data-v="${k}" class="${d.curso===k?'on':''}">${n}</button>`).join('')}</div></div></div><div class="field"><label>Clase en la que la haces <span class="muted small">(puede ser de otra área)</span></label><select id="aH"></select></div>
-   ${udOpts.length?`<div class="field"><label>Unidad o situación (opcional)</label><div class="erow"><select id="aU"><option value="">Ninguna</option>${udOpts.map(u=>`<option value="${u.id}" ${d.ud===u.id?'selected':''}>${esc(codUd(u))} · ${esc(u.d.titulo)}</option>`).join('')}</select><button type="button" class="btn sm" id="aUc">Usar sus criterios</button></div></div>`:''}
+   <div class="field"><label>Área</label><select id="aA" ${conNotas?'disabled':''}>${arOpts()}</select>${conNotas?'<div class="small muted" style="margin-top:4px">Tiene notas: para cambiar de área, borra antes sus notas.</div>':''}</div>
+   <div class="g2b"><div class="field"><label>Fecha</label><input type="date" id="aF" value="${f}"></div><div class="field"><label>Curso</label><div class="seg" id="aC">${cursosHtml()}</div></div></div>
+   <div class="field"><label>Clase en la que la haces <span class="muted small">(puede ser de otra área del mismo grupo)</span></label><select id="aH"></select></div>
+   <div class="field" id="aUw">${udsHtml()}</div>
    <div class="field"><label>Criterios que evalúa <span class="muted small" id="aN"></span></label><div id="aL" class="clist">${lista()}</div></div>
-   <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?`<span class="btns"><button class="btn danger" id="aDel">Borrar</button>${notasAct(p0).length?`<button class="btn danger g" id="aDelN">Borrar notas (${notasAct(p0).length})</button>`:''}</span>`:'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
+   <div class="btns" style="justify-content:space-between;margin-top:14px">${p0?`<span class="btns"><button class="btn danger" id="aDel">Borrar</button>${conNotas?`<button class="btn danger g" id="aDelN">Borrar notas (${notasAct(p0).length})</button>`:''}</span>`:'<span></span>'}<span class="btns"><button class="btn" data-close>Cancelar</button><button class="btn pri" id="aOk">Guardar</button></span></div>`,(m,close)=>{
     let hIni=opts.ini||d.ini||'';
     const horas=()=>{const fv=m.querySelector('#aF').value;const L=franjasDe(fv);const sel=m.querySelector('#aH');
-      const def=hIni&&L.some(x=>x.ini===hIni)?hIni:((L.find(x=>x.ar===UI.area)||{}).ini||'');
+      const def=hIni&&L.some(x=>x.ini===hIni)?hIni:((L.find(x=>x.ar===ar)||{}).ini||'');
       sel.innerHTML=`<option value="" ${def?'':'selected'}>${L.length?'Sin clase asignada':'No tienes clase ese día'}</option>`+L.map(x=>`<option value="${x.ini}" ${x.ini===def?'selected':''}>${x.ini}–${x.fin} · ${esc(nomFranja(x))}</option>`).join('');};
-    horas();m.querySelector('#aF').addEventListener('change',()=>{hIni='';horas()});
-    const cnt=()=>{const n=m.querySelectorAll('#aL input:checked').length;m.querySelector('#aN').textContent=n?`(${n})`:''};cnt();
+    const cnt=()=>{const n=m.querySelectorAll('#aL input:checked').length;m.querySelector('#aN').textContent=n?`(${n})`:''};
+    const ucBind=()=>{const uc=m.querySelector('#aUc');if(uc)uc.onclick=()=>{const u=S.prog[m.querySelector('#aU').value];if(!u){toast('Elige primero una unidad');return}const set=new Set(u.d.crits||[]);m.querySelectorAll('#aL input').forEach(i=>i.checked=set.has(i.value));cnt()}};
+    /* cambia de área: cursos, unidades y criterios pasan a ser los de la nueva área */
+    const ponArea=(na,desdeClase)=>{if(!CURRICULO[na]||na===ar)return;if(conNotas){toast('Esta actividad ya tiene notas: no puede cambiar de área');return}
+      d.crits=[...m.querySelectorAll('#aL input:checked')].map(i=>i.value);ar=na;d.ud='';
+      m.querySelector('#aA').value=ar;m.querySelector('#aC').innerHTML=cursosHtml();m.querySelector('#aUw').innerHTML=udsHtml();m.querySelector('#aL').innerHTML=lista();ucBind();cnt();
+      if(!desdeClase){hIni=m.querySelector('#aH').value;horas()}else toast('Área cambiada a '+areaN(ar))};
+    horas();cnt();ucBind();
+    m.querySelector('#aF').addEventListener('change',()=>{hIni='';horas()});
+    m.querySelector('#aA').addEventListener('change',e=>ponArea(e.target.value,false));
+    /* al elegir una clase de otro grupo (otros cursos), la actividad pasa a esa área */
+    m.querySelector('#aH').addEventListener('change',e=>{const fr=franjasDe(m.querySelector('#aF').value).find(x=>x.ini===e.target.value);if(fr&&CURRICULO[fr.ar]&&AREAS.some(a=>a.id===fr.ar)&&grupoAr(fr.ar)!==grupoAr(ar))ponArea(fr.ar,true)});
     m.querySelector('#aL').addEventListener('change',cnt);
     m.querySelector('#aC').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;m.querySelectorAll('#aC button').forEach(x=>x.classList.toggle('on',x===b))});
-    const uc=m.querySelector('#aUc');if(uc)uc.onclick=()=>{const u=S.prog[m.querySelector('#aU').value];if(!u){toast('Elige primero una unidad');return}const set=new Set(u.d.crits||[]);m.querySelectorAll('#aL input').forEach(i=>i.checked=set.has(i.value));cnt()};
     m.querySelector('#aOk').onclick=()=>{const tit=m.querySelector('#aTit').value.trim();const crits=[...m.querySelectorAll('#aL input:checked')].map(i=>i.value);
       if(!tit){toast('Pon un título');return}if(!crits.length){toast('Marca al menos un criterio');return}
-      const nf=m.querySelector('#aF').value||today();const nd={titulo:tit,curso:(m.querySelector('#aC .on')||{}).dataset?.v||'ambos',crits,ud:(m.querySelector('#aU')||{}).value||'',ini:m.querySelector('#aH').value||''};
-      const pid=p0?p0.id:uid();saveProg({id:pid,t:'act',ar:UI.area,f:nf,d:nd});
+      const cs=CURS(ar);const nf=m.querySelector('#aF').value||today();const cu=(m.querySelector('#aC .on')||{}).dataset?.v||'ambos';
+      const nd={titulo:tit,curso:cs.length<2?'ambos':cu,crits,ud:(m.querySelector('#aU')||{}).value||'',ini:m.querySelector('#aH').value||''};
+      const pid=p0?p0.id:uid();saveProg({id:pid,t:'act',ar,f:nf,d:nd});
       if(p0&&nf!==p0.f)notasAct(p0).forEach(r=>{const nr=Object.assign({},r,{f:nf});putReg(nr);enqueue({op:'up',r:nr})});
       close();abrirAct(pid);toast('Actividad guardada')};
     const dn=m.querySelector('#aDelN');if(dn)dn.onclick=()=>{const L=notasAct(p0).map(r=>Object.assign({},r));close();
