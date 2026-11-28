@@ -923,3 +923,4 @@ html.claro .pills button.on{background:#fff;color:var(--ink)}
 #undo.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 #undo button{border:0;background:#ff5f6d;color:#fff;font:800 13.5px Inter,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer}
 @media(min-width:900px){#undo{bottom:28px}}
+.mtop2 img,.side .brand2 img{border-radius:50%}
