@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Evalúapp para Séneca",
+  "version": "1.1.1",
+  "description": "Pasa al cuaderno de Séneca las notas por criterio preparadas en Evalúapp. Extensión personal, no oficial.",
+  "icons": { "48": "icon-48.png", "96": "icon-96.png", "128": "icon-128.png" },
+  "permissions": ["storage"],
+  "host_permissions": ["https://script.google.com/*", "https://script.googleusercontent.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    { "matches": ["https://seneca.juntadeandalucia.es/*"], "js": ["content.js"], "run_at": "document_idle" }
+  ]
+}
