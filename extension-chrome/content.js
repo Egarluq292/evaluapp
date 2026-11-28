@@ -36,7 +36,9 @@ const browser = globalThis.browser || globalThis.chrome;
   let ocupado = false;
 
   async function leerTabla() {
-    const r = await browser.runtime.sendMessage({ tipo: 'leer' });
+    if (!viva()) throw new Error('La extensión se ha actualizado. Recarga esta página de Séneca (F5).');
+    let r;
+    try { r = await browser.runtime.sendMessage({ tipo: 'leer' }); } catch (e) { throw new Error(/context invalidated|receiving end/i.test(String(e && e.message)) ? 'La extensión se ha actualizado. Recarga esta página de Séneca (F5).' : 'No se pudo hablar con la extensión. Recarga la página.'); }
     if (!r || r.error) throw new Error(r ? r.error : 'No se pudo leer la hoja.');
     const clave = claveActividad();
     const sp = r.senPend || {};
@@ -110,8 +112,13 @@ const browser = globalThis.browser || globalThis.chrome;
   }
   const cerrar = () => { const p = $('#evp-panel'); if (p) p.remove(); };
 
+  /* Si la extensión se ha actualizado o recargado, esta página conserva el código viejo y ya no puede hablar con ella */
+  const viva = () => { try { return !!(browser.runtime && browser.runtime.id); } catch (e) { return false; } };
+  const avisoRecargar = () => panel(`<h3>Evalúapp</h3><div class="evp-box evp-warn">La extensión se ha actualizado. <b>Recarga esta página de Séneca</b> (tecla F5) y vuelve a pulsar «Evalúapp».</div><button class="evp-pri" data-evp="recargar">Recargar ahora</button>`);
   async function abrir() {
-    const { url, key } = await browser.storage.local.get(['url', 'key']);
+    if (!viva()) return avisoRecargar();
+    let url, key;
+    try { ({ url, key } = await browser.storage.local.get(['url', 'key'])); } catch (e) { return avisoRecargar(); }
     if (!url || !key) return pantallaConectar();
     if (!ventana() || !casillas().length) return panel(`<h3>Evalúapp</h3><div class="evp-box">Abre una actividad del cuaderno y la ventana de calificar a un alumno (la que tiene el selector de alumnos y las casillas de nota). Después vuelve a pulsar «Evalúapp».</div><button data-evp="conectar">Cambiar la conexión</button>`);
     panel(`<h3>Evalúapp</h3><div class="evp-box">Leyendo tus notas de la hoja…</div>`);
@@ -193,7 +200,8 @@ const browser = globalThis.browser || globalThis.chrome;
     let c = null;
     try { c = JSON.parse(atob(decodeURIComponent(m[1]))); } catch (e) { }
     if (!c || !c.url || !c.key) return pantallaConectar('<div class="evp-box evp-err">Ese enlace no es válido. Cópialo entero desde Evalúapp.</div>');
-    await browser.storage.local.set({ url: c.url, key: c.key });
+    if (!viva()) return avisoRecargar();
+    try { await browser.storage.local.set({ url: c.url, key: c.key }); } catch (e) { return avisoRecargar(); }
     abrir();
   }
 
@@ -202,6 +210,7 @@ const browser = globalThis.browser || globalThis.chrome;
     e.preventDefault(); e.stopPropagation();
     const a = b.dataset.evp, clave = claveActividad();
     if (a === 'cerrar') return cerrar();
+    if (a === 'recargar') return location.reload();
     if (a === 'abrir') return abrir();
     if (a === 'conectar') return pantallaConectar();
     if (a === 'guardar-con') return guardarConexion();

@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Evalúapp para Séneca",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Pasa al cuaderno de Séneca las notas por criterio preparadas en Evalúapp. Extensión personal, no oficial.",
   "icons": {
     "48": "icon-48.png",
