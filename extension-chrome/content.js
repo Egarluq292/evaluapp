@@ -181,7 +181,8 @@ const browser = globalThis.browser || globalThis.chrome;
 
   function pantallaConectar(msg = '') {
     panel(`<h3>Conectar con Evalúapp</h3>
-      <p>En Evalúapp (ya conectada a tu hoja): Ajustes → Hoja de Google → «Conectar otro dispositivo». Copia ese enlace y pégalo aquí.</p>
+      <p><b>La forma fácil:</b> abre Evalúapp en este mismo navegador (con tu hoja conectada) y la extensión se conecta sola. Después vuelve aquí y pulsa «Evalúapp».</p>
+      <p>O pega aquí el enlace de Evalúapp → Ajustes → Hoja de Google → «Conectar otro dispositivo». <b>No</b> es lo que copia «Enviar a la extensión»: ese botón solo deja las notas preparadas en tu hoja.</p>
       ${msg}
       <textarea id="evp-link" placeholder="https://egarluq292.github.io/evaluapp/#conectar=…"></textarea>
       <button class="evp-pri" data-evp="guardar-con">Conectar</button>`);
